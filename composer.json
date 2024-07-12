@@ -1,0 +1,55 @@
+{
+  "name": "imedge/node",
+  "type": "project",
+  "config": {
+    "sort-packages": true
+  },
+  "autoload": {
+    "psr-4": {
+      "IMEdge\\Node\\": "src"
+    }
+  },
+  "require": {
+    "php": ">=8.1",
+    "ext-ctype": "*",
+    "ext-gmp": "*",
+    "ext-iconv": "*",
+    "ext-json": "*",
+    "ext-openssl": "*",
+    "ext-pcntl": "*",
+    "ext-posix": "*",
+    "ext-sockets": "*",
+    "ext-zlib": "*",
+    "amphp/http-client": "^5.0",
+    "amphp/mysql": "^3.0",
+    "amphp/process": "^2.0",
+    "amphp/redis": "^2.0",
+    "amphp/sql-common": "^2.0",
+    "gipfl/data-type": "^0.3.0",
+    "gipfl/log": "^0.7.0",
+    "imedge/async": ">=0.1",
+    "imedge/certificate-store": ">=0.1",
+    "imedge/distance-router": "^0.2.0",
+    "imedge/filesystem": ">=0.1",
+    "imedge/influxdb-streamer": ">=0.2",
+    "imedge/inventory": ">=0.1",
+    "imedge/jsonrpc": ">=0.5",
+    "imedge/log": ">=0.5",
+    "imedge/metrics": ">=0.2",
+    "imedge/process-runner": ">=0.1",
+    "imedge/protocol-netstring": ">=0.3",
+    "imedge/protocol-ntp": ">=0.1",
+    "imedge/redis-runner": ">=0.1",
+    "imedge/redis-tables": ">=0.3",
+    "imedge/redis-utils": ">=0.2",
+    "imedge/rpc-api": ">=0.1",
+    "imedge/simple-daemon": "^0.2.0",
+    "imedge/systemd": ">=0.1",
+    "laminas/laminas-db": "^2.18",
+    "ramsey/uuid": "^4.7",
+    "react/promise-stream": "^1.6",
+    "revolt/event-loop": "^1.0",
+    "revolt/event-loop-adapter-react": "^1.1",
+    "ulrichsg/getopt-php": "^4.0"
+  }
+}
