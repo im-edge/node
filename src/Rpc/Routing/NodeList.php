@@ -34,7 +34,11 @@ class NodeList implements JsonSerialization
 
     public function getOptional(string $id): ?JsonRpcConnection
     {
-        return $this->nodes[$id]?->connection;
+        if (isset($this->nodes[$id])) {
+            return $this->nodes[$id]->connection;
+        }
+
+        return null;
     }
 
     /**
