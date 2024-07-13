@@ -5,6 +5,7 @@ namespace IMEdge\Node\Rpc\Routing;
 use IMEdge\DistanceRouter\RouteList;
 use IMEdge\DistanceRouter\RoutingTable;
 use InvalidArgumentException;
+use Psr\Log\LoggerInterface;
 
 class NodeRouter
 {
@@ -17,7 +18,8 @@ class NodeRouter
     protected array $peerRoutes = [];
 
     public function __construct(
-        public readonly Node $node
+        public readonly Node $node,
+        protected readonly LoggerInterface $logger,
     ) {
         $this->directlyConnected = new NodeList();
         $this->routingTable = new RoutingTable();
@@ -35,6 +37,7 @@ class NodeRouter
         }
 
         $this->directlyConnected->attach($peer);
+        $this->logger->notice('NodeRunner, new directly connected peer: ' . $peer->name);
     }
 
     public function setPeerRoutes(Node $peer, RouteList $routes): void
