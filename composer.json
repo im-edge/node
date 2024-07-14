@@ -26,6 +26,7 @@
     "amphp/redis": "^2.0",
     "amphp/sql-common": "^2.0",
     "gipfl/data-type": "^0.3.0",
+    "gipfl/linux-health": "^0.2.0",
     "gipfl/log": "^0.7",
     "imedge/async": ">=0.1",
     "imedge/certificate-store": ">=0.1",

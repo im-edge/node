@@ -10,6 +10,7 @@ use IMEdge\Metrics\Ci;
 use IMEdge\Metrics\Measurement;
 use IMEdge\Metrics\Metric;
 use IMEdge\Metrics\MetricDatatype;
+use IMEdge\Node\Events;
 use IMEdge\Node\Services;
 use Psr\Log\LoggerInterface;
 use Revolt\EventLoop;
@@ -27,6 +28,7 @@ class InternalMetricsCollection
 
     public function __construct(
         protected NodeIdentifier $nodeIdentifier,
+        protected Events $events,
         Services $services,
         protected LoggerInterface $logger
     ) {
@@ -88,7 +90,7 @@ class InternalMetricsCollection
         ]);
     }
 
-    protected function shipScenarioMeasurement(Measurement $measurement): void
+    protected function shipMeasurement(Measurement $measurement): void
     {
         EventLoop::queue(function () use ($measurement) {
             $this->redis->execute(
@@ -102,6 +104,10 @@ class InternalMetricsCollection
                 JsonString::encode($measurement)
             );
         });
+        // TODO: Central event name
+        $this->events->emit(\IMEdge\MetricsFeature\MetricStoreRunner::ON_MEASUREMENTS, [
+            [$measurement]
+        ]);
     }
 
     /**

@@ -84,7 +84,12 @@ class NodeRunner implements DaemonComponent
         $this->services = new Services($this, $this->logger);
         $this->identifier = new NodeIdentifier($this->getUuid(), $this->name, self::getFqdn());
         EventLoop::queue(function () {
-            $internalMetrics = new InternalMetricsCollection($this->identifier, $this->services, $this->logger);
+            $internalMetrics = new InternalMetricsCollection(
+                $this->identifier,
+                $this->events,
+                $this->services,
+                $this->logger
+            );
             $internalMetrics->start();
             $this->newComponents['internalMetrics'] = $internalMetrics;
         });
