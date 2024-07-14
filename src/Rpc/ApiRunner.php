@@ -2,22 +2,19 @@
 
 namespace IMEdge\Node\Rpc;
 
-use gipfl\Protocol\JsonRpc\Request as LegacyRequest;
 use IMEdge\JsonRpc\Error;
 use IMEdge\JsonRpc\ErrorCode;
 use IMEdge\JsonRpc\Notification;
 use IMEdge\JsonRpc\Request;
 use IMEdge\JsonRpc\RequestHandler;
 use IMEdge\JsonRpc\Response;
-use IMEdge\Node\Network\DataNodeConnections;
 use IMEdge\Node\Rpc\Routing\NodeList;
 use IMEdge\RpcApi\Hydrator;
 use IMEdge\RpcApi\Reflection\MetaDataClass;
 use IMEdge\RpcApi\Reflection\MetaDataMethod;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
-
-use function React\Async\await as reactAwait;
+use RuntimeException;
 
 class ApiRunner implements RequestHandler
 {
@@ -34,7 +31,6 @@ class ApiRunner implements RequestHandler
     public function __construct(
         protected string $identifier,
         protected ?NodeList $nodeList = null,
-        public readonly ?DataNodeConnections $dataNodeConnections = null,
     ) {
         Hydrator::registerType(UuidInterface::class, static function ($value) {
             return Uuid::fromString($value);
@@ -53,7 +49,7 @@ class ApiRunner implements RequestHandler
     {
         $meta = MetaDataClass::analyze(get_class($instance));
         if (! $meta) {
-            throw new \RuntimeException("Failed to analyze API instance: " . get_class($instance));
+            throw new RuntimeException("Failed to analyze API instance: " . get_class($instance));
         }
         $namespace = $meta->namespace;
         foreach ($meta->methods as $method) {
@@ -64,57 +60,10 @@ class ApiRunner implements RequestHandler
         }
     }
 
-    protected function handleRemoteRequest(Request $request, $target): Response
-    {
-        if ($rpc = $this->dataNodeConnections->getOptionalConnection($target)) {
-            return reactAwait($rpc->sendRequest(LegacyRequest::fromSerialization($request->jsonSerialize())));
-        } else {
-            if ($this->dataNodeConnections->hasConnections()) {
-                return new Response($request->id, null, new Error(self::NO_SUCH_TARGET, sprintf(
-                    'I am not %s. Connections: %s',
-                    $target,
-                    implode(', ', $this->dataNodeConnections->listActiveUuids())
-                )));
-            }
-
-            return new Response($request->id, null, new Error(self::NO_SUCH_TARGET, sprintf(
-                'I am not %s and not connected to other nodes',
-                $target
-            )));
-        }
-    }
-
-    protected function handleNewRemoteRequest(Request $request, $target): Response
-    {
-        if ($rpc = $this->nodeList->getOptional($target)) {
-            return $rpc->sendRequest($request);
-        } else {
-            if (!empty($this->nodeList->getNodes())) {
-                return new Response($request->id, null, new Error(self::NO_SUCH_TARGET, sprintf(
-                    'I am not %s. Connections: %s',
-                    $target,
-                    implode(', ', array_keys($this->nodeList->jsonSerialize())) // TODO: list uuids
-                )));
-            }
-
-            return new Response($request->id, null, new Error(self::NO_SUCH_TARGET, sprintf(
-                'I am not %s and not connected to other nodes',
-                $target
-            )));
-        }
-    }
-
     public function handleRequest(Request $request): Response
     {
         if (
             $this->nodeList
-            && ($target = $request->getExtraProperty('target'))
-            && ($target !== $this->identifier)
-        ) {
-            return $this->handleNewRemoteRequest($request, $target);
-        }
-        if (
-            $this->dataNodeConnections
             && ($target = $request->getExtraProperty('target'))
             && ($target !== $this->identifier)
         ) {
@@ -142,6 +91,61 @@ class ApiRunner implements RequestHandler
 
     public function handleNotification(Notification $notification): void
     {
-        // TODO: Implement handleNotification() method.
+        if (
+            $this->nodeList
+            && ($target = $notification->getExtraProperty('target'))
+            && ($target !== $this->identifier)
+        ) {
+            $this->handleNewRemoteNotification($notification, $target);
+            return;
+        }
+
+        $meta = $this->methodMeta[$notification->method] ?? null;
+        if ($meta === null) {
+            // TODO: Log missing method?
+            return;
+        }
+
+        if ($notification->params === null) {
+            $this->methods[$notification->method]();
+            return;
+        }
+
+        $parameters = (array) $notification->params;
+        foreach ($parameters as $key => &$value) {
+            if ($type = $meta->getParameter($key)) {
+                $value = Hydrator::hydrate($type->type, $value);
+            }
+        }
+
+        $this->methods[$notification->method](...$parameters);
+    }
+
+    protected function handleRemoteRequest(Request $request, $target): Response
+    {
+        if ($rpc = $this->nodeList->getOptional($target)) {
+            return $rpc->sendRequest($request);
+        } else {
+            if (!empty($this->nodeList->getNodes())) {
+                return new Response($request->id, null, new Error(self::NO_SUCH_TARGET, sprintf(
+                    'I am not %s. Connections: %s',
+                    $target,
+                    implode(', ', array_keys($this->nodeList->jsonSerialize())) // TODO: list uuids
+                )));
+            }
+
+            return new Response($request->id, null, new Error(self::NO_SUCH_TARGET, sprintf(
+                'I am not %s and not connected to other nodes',
+                $target
+            )));
+        }
+    }
+
+    protected function handleNewRemoteNotification(Notification $notification, $target): void
+    {
+        if ($rpc = $this->nodeList->getOptional($target)) {
+            $rpc->sendPacket($notification);
+        }
+        // TODO: else log lost notification?
     }
 }
