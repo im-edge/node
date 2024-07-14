@@ -27,11 +27,11 @@ class JsonRpcConnectionWriter implements LogWriterWithContext
     public function write($level, $message, $context = [])
     {
         $message = iconv('UTF-8', 'UTF-8//IGNORE', $message);
-        $this->connection->notification($this->method, $this->defaultContext + [
+        $this->connection->notification($this->method, [
             'level'     => $level,
-            'timestamp' => microtime(true),
+            // 'timestamp' => microtime(true),
             'message'   => $message,
-            'context'   => $context,
+            'context'   => $this->defaultContext + $context,
         ]);
     }
 }
