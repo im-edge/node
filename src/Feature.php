@@ -6,7 +6,6 @@ use Evenement\EventEmitterTrait;
 use gipfl\DataType\Settings;
 use gipfl\Json\JsonString;
 use gipfl\Log\PrefixLogger;
-use gipfl\Protocol\JsonRpc\JsonRpcConnection as OldJsonRpcConnection;
 use IMEdge\Filesystem\Directory;
 use IMEdge\Inventory\CentralInventory;
 use IMEdge\Inventory\NodeIdentifier;
@@ -226,28 +225,6 @@ final class Feature
     final public function getConnectionSubscribers(): array
     {
         return $this->connectionSubscribers;
-    }
-
-    /**
-     * Allows features to register additional connections
-     *
-     * This is being used to grant remote access to feature sub-processes with RPC support
-     *
-     * @deprecated
-     * @api
-     */
-    final public function registerRpcConnection(OldJsonRpcConnection $connection, string $peerAddress): void
-    {
-        $this->emit(self::ON_CONNECTION, [$connection, $peerAddress]);
-    }
-
-    /**
-     * @deprecated
-     * @api
-    */
-    final public function removeRpcConnection(string $peerAddress): void
-    {
-        $this->emit(self::ON_CONNECTION_REMOVED, [$peerAddress]);
     }
 
     final public function connectNode(Node $node): void
