@@ -54,10 +54,6 @@ try {
     if ($command instanceof LoggerAwareInterface) {
         $command->setLogger($logger);
     }
-    EventLoop::repeat(5, function () use ($logger) {
-        $logger->debug('Registered Callbacks: ' . count(EventLoop::getDriver()->getIdentifiers()));
-    });
-
     call_user_func($command->getHandler(), $options);
 } catch (ArgumentException $e) {
     Cli::writeError($e->getMessage());

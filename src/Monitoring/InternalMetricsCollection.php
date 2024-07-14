@@ -55,8 +55,12 @@ class InternalMetricsCollection
     protected function emitMeasurements(): void
     {
         $now = time();
-        $this->shipScenarioMeasurement($this->prepareMeasurementCpu($now));
-        $this->shipScenarioMeasurement($this->prepareMeasurementMemory($now));
+        // TODO: CPU/Memory for sub-processes
+        $this->shipMeasurement($this->prepareMeasurementCpu($now));
+        $this->shipMeasurement($this->prepareMeasurementMemory($now));
+        $this->shipMeasurement(new Measurement(new Ci($this->uuidString, 'EventLoop'), $now, [
+            new Metric('registeredCallbacks', count(EventLoop::getDriver()->getIdentifiers()))
+        ]));
     }
 
     protected function prepareMeasurementCpu($now): Measurement
