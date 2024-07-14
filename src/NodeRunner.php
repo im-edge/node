@@ -88,7 +88,7 @@ class NodeRunner implements DaemonComponent
             $internalMetrics->start();
             $this->newComponents['internalMetrics'] = $internalMetrics;
         });
-        $this->nodeRouter = new NodeRouter(new Node($this->identifier->uuid, $this->identifier->name));
+        $this->nodeRouter = new NodeRouter(new Node($this->identifier->uuid, $this->identifier->name), $this->logger);
         $this->dataNodeConnections = new DataNodeConnections($this, $this->logger);
         $this->rpcConnections = new RpcConnections($this, null, $this->logger);
         $this->connectionHandler = new ConnectionHandler($this->dataNodeConnections, $this->logger);
