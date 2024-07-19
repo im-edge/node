@@ -82,7 +82,11 @@ class ApiRunner implements RequestHandler
         $parameters = (array) $request->params;
         foreach ($parameters as $key => &$value) {
             if ($type = $meta->getParameter($key)) {
-                $value = Hydrator::hydrate($type->type, $value);
+                try {
+                    $value = Hydrator::hydrate($type->type, $value);
+                } catch (InvalidArgumentException $e) {
+                    $e = new \InvalidArgumentException(sprintf('%s:%s: %s', $meta->name, $key, $e->getMessage()));
+                }
             }
         }
 
