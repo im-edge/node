@@ -99,9 +99,7 @@ class NodeRunner implements DaemonComponent
         $this->connectionHandler = new ConnectionHandler($this->dataNodeConnections, $this->logger);
         EventLoop::queue($this->launchRedis(...));
         $this->initializeRemoteControl();
-        $this->logger->notice('rpc');
         $this->features = Features::initialize($this, $this->logger);
-        $this->logger->notice('features');
         $this->connectionHandler->setConfiguredConnections(
             $this->requireConfig()->getArray(self::CONFIG_PERSISTED_CONNECTIONS)
         );

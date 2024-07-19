@@ -76,7 +76,7 @@ class Features
 
     public function tellSubscribersAboutLoadedFeature(Feature $feature): void
     {
-        $this->logger->notice('Features::tellSubscribersAboutLoadedFeature:' . $feature->name);
+        // $this->logger->notice('Features::tellSubscribersAboutLoadedFeature:' . $feature->name);
         // TODO: unfinished, wrong!!
         foreach ($feature->getRpcRegistrationSubscribers() as $handler) {
             // foreach ($this->features->getLoaded() as $loaded) {
@@ -113,7 +113,7 @@ class Features
 
     public function applyFeatureEventHandlers(Feature $feature, NodeRunner $node): void
     {
-        $this->logger->notice('DataNode::applyFeatureEventHandlers:' . $feature->name);
+        // $this->logger->notice('DataNode::applyFeatureEventHandlers:' . $feature->name);
         $feature->on(Feature::ON_INVENTORY_REGISTERED, function (CentralInventory $inventory) use ($node) {
             $node->setCentralInventory($inventory);
         });

@@ -23,7 +23,7 @@ class Services
 
     public function getRedisClient(string $clientName): RedisClient
     {
-        $this->logger->notice("Getting (new) Redis client for $clientName");
+        // $this->logger->notice("Getting (new) Redis client for $clientName");
         $client = createRedisClient($this->getRedisSocket());
         $client->execute('CLIENT', 'SETNAME', $clientName);
 
@@ -32,7 +32,7 @@ class Services
 
     public function getRedisTables(string $clientName): RedisTables
     {
-        $this->logger->notice("Getting (new) Redis table for $clientName");
+        // $this->logger->notice("Getting (new) Redis table for $clientName");
         $client = $this->getRedisClient($clientName);
         $this->logger->notice("RedisTables ready for $clientName");
         return new RedisTables($this->dataNode->getUuid()->toString(), $client, $this->logger);
