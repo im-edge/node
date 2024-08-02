@@ -10,6 +10,7 @@ use IMEdge\Metrics\Ci;
 use IMEdge\Metrics\Measurement;
 use IMEdge\Metrics\Metric;
 use IMEdge\Metrics\MetricDatatype;
+use IMEdge\Metrics\MetricsEvent;
 use IMEdge\Node\Events;
 use IMEdge\Node\Services;
 use Psr\Log\LoggerInterface;
@@ -104,8 +105,7 @@ class InternalMetricsCollection
                 JsonString::encode($measurement)
             );
         });
-        // TODO: Central event name
-        $this->events->emit(\IMEdge\MetricsFeature\MetricStoreRunner::ON_MEASUREMENTS, [
+        $this->events->emit(MetricsEvent::ON_MEASUREMENTS, [
             [$measurement]
         ]);
     }
