@@ -80,19 +80,27 @@ class InternalMetricsCollection
         ]);
     }
 
-    protected function prepareMeasurementMemory($now): Measurement
+    protected function prepareMeasurementMemory($now): ?Measurement
     {
         $ci = new Ci($this->uuidString, 'UsedMemory', self::PROCESS_NAME);
         $memory = Memory::getUsageForPid(getmypid());
-        return new Measurement($ci, $now, [
-            new Metric('size', $memory->size),
-            new Metric('rss', $memory->rss),
-            new Metric('shared', $memory->shared),
-        ]);
+        if ($memory) {
+            return new Measurement($ci, $now, [
+                new Metric('size', $memory->size),
+                new Metric('rss', $memory->rss),
+                new Metric('shared', $memory->shared),
+            ]);
+        }
+
+        return null;
     }
 
-    protected function shipMeasurement(Measurement $measurement): void
+    protected function shipMeasurement(?Measurement $measurement = null): void
     {
+        if ($measurement === null) {
+            return;
+        }
+        // TODO: This was implemented for InfluxDB. Remove it
         EventLoop::queue(function () use ($measurement) {
             $this->redis->execute(
                 'XADD',
@@ -105,6 +113,7 @@ class InternalMetricsCollection
                 JsonString::encode($measurement)
             );
         });
+        // ...but this is required:
         $this->events->emit(MetricsEvent::ON_MEASUREMENTS, [
             [$measurement]
         ]);
