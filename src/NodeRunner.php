@@ -39,7 +39,7 @@ class NodeRunner implements DaemonComponent
     protected const CONFIG_TYPE = 'IMEdge/Node';
     protected const CONFIG_FILE_NAME = 'node.json';
     protected const CONFIG_VERSION = 'v1';
-    protected const DOT_DIR = '.imedge-node';
+    protected const DOT_DIR = '.imedge';
     protected const SUPPORTED_CONFIG_VERSIONS = [
         self::CONFIG_VERSION,
     ];
