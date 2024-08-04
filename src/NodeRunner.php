@@ -60,7 +60,7 @@ class NodeRunner implements DaemonComponent
     protected array $redisTableSubscribers = [];
     protected DeferredFuture|string $redisSocket;
     protected array $newComponents = [];
-    protected RpcConnections $rpcConnections;
+    public RpcConnections $rpcConnections;
     public NodeRouter $nodeRouter;
     public readonly ApiRunner $controlApi;
     protected ControlConnections $controlSocket;

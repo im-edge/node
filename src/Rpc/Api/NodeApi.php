@@ -84,6 +84,71 @@ class NodeApi
         return $result;
     }
 
+    /**
+     * Listen on a given TCP socket address
+     */
+    #[ApiMethod]
+    public function listen(string $socket, ?bool $persist = false): bool
+    {
+        /*if ($persist) {
+            $this->logger->notice('Pers req');
+            $config = $this->node->requireConfig();
+            $connections = $config->getArray(NodeRunner::CONFIG_PERSISTED_CONNECTIONS);
+            if (! isset($connections[$peerAddress])) {
+                $connections[$peerAddress] = (object) [];
+                $config->set(NodeRunner::CONFIG_PERSISTED_CONNECTIONS, $connections);
+                $this->node->storeConfig($config);
+            }
+        }*/
+        if (in_array($socket, $this->node->rpcConnections->listListeners())) {
+            throw new \InvalidArgumentException("Node is already listening on $socket");
+        }
+        $this->logger->notice("Binding tcp://$socket");
+        $bind = $this->node->rpcConnections->listen('tcp://' . $socket);
+        EventLoop::queue(function () use ($socket, $bind) {
+            try {
+                foreach ($bind as $connection) {
+                    // TODO: Move this loop elsewhere
+                    $this->logger->notice('Got a connection on tcp://' . $socket);
+                }
+                // Socket stopped.
+            } catch (\Throwable $e) {
+                $this->logger->notice("Socket tcp://$socket failed: " . $e->getMessage());
+            }
+        });
+
+        return true;
+    }
+
+    /**
+     * Stop listening on the given TCP socket address
+     */
+    #[ApiMethod]
+    public function stopListening(string $socket, ?bool $persist = false): bool
+    {
+        /*if ($persist) {
+            $this->logger->notice('Pers req');
+            $config = $this->node->requireConfig();
+            $connections = $config->getArray(NodeRunner::CONFIG_PERSISTED_CONNECTIONS);
+            if (! isset($connections[$peerAddress])) {
+                $connections[$peerAddress] = (object) [];
+                $config->set(NodeRunner::CONFIG_PERSISTED_CONNECTIONS, $connections);
+                $this->node->storeConfig($config);
+            }
+        }*/
+        $this->logger->notice("Closing tcp://$socket");
+        return $this->node->rpcConnections->stopListener('tcp://' . $socket);
+    }
+
+    /**
+     * Get a list of currently active TCP listeners
+     */
+    #[ApiMethod]
+    public function listListeners(): array
+    {
+        return $this->node->rpcConnections->listListeners();
+    }
+
     #[ApiMethod]
     public function connect(string $peerAddress, bool $persist): bool
     {
