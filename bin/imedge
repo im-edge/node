@@ -9,6 +9,7 @@ use IMEdge\Node\Application;
 use IMEdge\Node\Command\ConnectCommand;
 use IMEdge\Node\Command\DaemonCommand;
 use IMEdge\Node\Command\DisconnectCommand;
+use IMEdge\Node\Command\ListenCommand;
 use IMEdge\Node\Command\MetricsCommand;
 use IMEdge\Node\Command\RpcCommand;
 use IMEdge\Node\UtilityClasses\Cli;
@@ -36,6 +37,7 @@ $options->addCommands([
     new ConnectCommand(),
     new DisconnectCommand(),
     new DaemonCommand(),
+    new ListenCommand(),
     new MetricsCommand(),
     new RpcCommand(),
 ]);
