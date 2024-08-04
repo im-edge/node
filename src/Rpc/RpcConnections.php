@@ -10,6 +10,7 @@ use Amp\Socket\ClientTlsContext;
 use Amp\Socket\ConnectContext;
 use Amp\Socket\ConnectException;
 use Amp\Socket\PendingAcceptError;
+use Amp\Socket\ResourceServerSocket;
 use Amp\Socket\ServerTlsContext;
 use Amp\Socket\Socket;
 use Amp\Socket\SocketException;
@@ -40,6 +41,8 @@ class RpcConnections
 
     /** @var JsonRpcConnection[] */
     protected array $connections = [];
+    /** @var ResourceServerSocket[] */
+    protected array $listeners = [];
     protected DeferredCancellation $stopper;
 
     public function __construct(
@@ -59,20 +62,30 @@ class RpcConnections
         $this->stopper->cancel();
     }
 
+    public function listListeners(): array
+    {
+        return array_keys($this->listeners);
+    }
+
     /**
      * @param string $address e.g. tcp://127.0.0.1:5661
      * @throws \Amp\Socket\SocketException
      * @return \Generator<JsonRpcConnection>
      */
-    public function bind(string $address): \Generator
+    public function listen(string $address): \Generator
     {
         $server = listen($address, $this->prepareBindContext());
+        $this->listeners[$address] = $server;
         while (true) {
             try {
                 $socket = $server->accept($this->stopper->getCancellation());
             } catch (PendingAcceptError $e) {
                 $this->logger->error('Failed to accept socket connection: ' . $e->getMessage());
                 continue;
+            }
+            if ($socket === null) {
+                $this->logger->notice("Stopped listening on $address");
+                return;
             }
 
             $this->logger->notice(sprintf(
@@ -83,6 +96,18 @@ class RpcConnections
                 yield $rpc;
             }
         }
+    }
+
+    public function stopListener(string $address): bool
+    {
+        if (isset($this->listeners[$address])) {
+            $socket = $this->listeners[$address];
+            $socket->close();
+            unset($this->listeners[$address]);
+            return true;
+        }
+
+        return false;
     }
 
     public function close(JsonRpcConnection $connection): void
