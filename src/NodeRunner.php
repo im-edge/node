@@ -11,6 +11,7 @@ use IMEdge\Inventory\NodeIdentifier;
 use IMEdge\Node\Monitoring\InternalMetricsCollection;
 use IMEdge\Node\Network\ConnectionHandler;
 use IMEdge\Node\Network\DataNodeConnections;
+use IMEdge\Node\Rpc\Api\CaApi;
 use IMEdge\Node\Rpc\Api\NodeApi;
 use IMEdge\Node\Rpc\Api\NtpApi;
 use IMEdge\Node\Rpc\ApiRunner;
@@ -113,6 +114,7 @@ class NodeRunner implements DaemonComponent
         );
         $api->addApi(new NtpApi());
         $api->addApi(new NodeApi($this, $api, $this->logger));
+        $api->addApi(new CaApi($this, null, $this->logger));
         $this->controlSocket = new ControlConnections($this, $this->controlApi, $this->logger);
         $this->controlSocket->bind(self::SOCKET_FILE);
     }
