@@ -93,16 +93,15 @@ class NodeApi
     #[ApiMethod]
     public function listen(string $socket, ?bool $persist = false): bool
     {
-        /*if ($persist) {
-            $this->logger->notice('Pers req');
+        if ($persist) {
             $config = $this->node->requireConfig();
-            $connections = $config->getArray(NodeRunner::CONFIG_PERSISTED_CONNECTIONS);
-            if (! isset($connections[$peerAddress])) {
-                $connections[$peerAddress] = (object) [];
-                $config->set(NodeRunner::CONFIG_PERSISTED_CONNECTIONS, $connections);
+            $configured = $config->getArray(NodeRunner::CONFIG_LISTENERS);
+            if (! isset($configured[$socket])) {
+                $configured[$socket] = (object) [];
+                $config->set(NodeRunner::CONFIG_LISTENERS, $configured);
                 $this->node->storeConfig($config);
             }
-        }*/
+        }
         if (in_array($socket, $this->node->rpcConnections->listListeners())) {
             throw new \InvalidArgumentException("Node is already listening on $socket");
         }
@@ -129,16 +128,15 @@ class NodeApi
     #[ApiMethod]
     public function stopListening(string $socket, ?bool $persist = false): bool
     {
-        /*if ($persist) {
-            $this->logger->notice('Pers req');
+        if ($persist) {
             $config = $this->node->requireConfig();
-            $connections = $config->getArray(NodeRunner::CONFIG_PERSISTED_CONNECTIONS);
-            if (! isset($connections[$peerAddress])) {
-                $connections[$peerAddress] = (object) [];
-                $config->set(NodeRunner::CONFIG_PERSISTED_CONNECTIONS, $connections);
+            $configured = $config->getArray(NodeRunner::CONFIG_LISTENERS);
+            if (! isset($listeners[$socket])) {
+                $configured[$socket] = (object) [];
+                $config->set(NodeRunner::CONFIG_LISTENERS, $configured);
                 $this->node->storeConfig($config);
             }
-        }*/
+        }
         $this->logger->notice("Closing tcp://$socket");
         return $this->node->rpcConnections->stopListener('tcp://' . $socket);
     }
@@ -156,12 +154,11 @@ class NodeApi
     public function connect(string $peerAddress, bool $persist): bool
     {
         if ($persist) {
-            $this->logger->notice('Pers req');
             $config = $this->node->requireConfig();
-            $connections = $config->getArray(NodeRunner::CONFIG_PERSISTED_CONNECTIONS);
-            if (! isset($connections[$peerAddress])) {
-                $connections[$peerAddress] = (object) [];
-                $config->set(NodeRunner::CONFIG_PERSISTED_CONNECTIONS, $connections);
+            $configured = $config->getArray(NodeRunner::CONFIG_PERSISTED_CONNECTIONS);
+            if (! isset($configured[$peerAddress])) {
+                $configured[$peerAddress] = (object) [];
+                $config->set(NodeRunner::CONFIG_PERSISTED_CONNECTIONS, $configured);
                 $this->node->storeConfig($config);
             }
         }
@@ -175,11 +172,11 @@ class NodeApi
     {
         if ($persist) {
             $config = $this->node->requireConfig();
-            $connections = $config->getArray(NodeRunner::CONFIG_PERSISTED_CONNECTIONS);
-            if (isset($connections[$peerAddress])) {
-                unset($connections[$peerAddress]);
+            $configured = $config->getArray(NodeRunner::CONFIG_PERSISTED_CONNECTIONS);
+            if (isset($configured[$peerAddress])) {
+                unset($configured[$peerAddress]);
                 $this->node->storeConfig($config);
-                $config->set(NodeRunner::CONFIG_PERSISTED_CONNECTIONS, $connections);
+                $config->set(NodeRunner::CONFIG_PERSISTED_CONNECTIONS, $configured);
                 $this->node->storeConfig($config);
             }
         }
