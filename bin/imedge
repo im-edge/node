@@ -6,12 +6,16 @@ use GetOpt\GetOpt;
 use GetOpt\Option;
 use IMEdge\Log\ProcessLogger;
 use IMEdge\Node\Application;
+use IMEdge\Node\Command\CertificateCommand;
 use IMEdge\Node\Command\ConnectCommand;
+use IMEdge\Node\Command\CsrCommand;
 use IMEdge\Node\Command\DaemonCommand;
 use IMEdge\Node\Command\DisconnectCommand;
 use IMEdge\Node\Command\ListenCommand;
 use IMEdge\Node\Command\MetricsCommand;
 use IMEdge\Node\Command\RpcCommand;
+use IMEdge\Node\Command\SignCommand;
+use IMEdge\Node\Command\TrustCommand;
 use IMEdge\Node\UtilityClasses\Cli;
 use IMEdge\SimpleDaemon\Process;
 use Psr\Log\LoggerAwareInterface;
@@ -40,6 +44,10 @@ $options->addCommands([
     new ListenCommand(),
     new MetricsCommand(),
     new RpcCommand(),
+    new CsrCommand(),
+    new CertificateCommand(),
+    new SignCommand(),
+    new TrustCommand(),
 ]);
 
 try {
