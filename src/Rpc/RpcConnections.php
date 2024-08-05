@@ -136,7 +136,6 @@ class RpcConnections
 
         try {
             foreach ($socket->getTlsInfo()->getPeerCertificates() as $certificate) {
-                var_dump($certificate);
                 $cert = Certificate::fromPEM(PEM::fromString($certificate->toPem()));
                 if ($this->trustStore->isValid($cert)) {
                     $peerType = RpcPeerType::PEER;
@@ -182,10 +181,16 @@ class RpcConnections
 
     protected function prepareBindContext(): BindContext
     {
+        $certificate = $this->getMyConnectionCertificate();
+        if (Certificate::fromPEM(PEM::fromFile($certificate->getCertFile()))->isSelfIssued()) {
+            throw new \Exception('Cannot listen with a self-signed certificate');
+        }
         $tlsContext = (new ServerTlsContext())
             ->withCaPath($this->trustStore->getCaPath())
             ->withPeerCapturing()
-            ->withDefaultCertificate($this->getMyConnectionCertificate())
+            ->withDefaultCertificate($certificate)
+            ->withPeerVerification()
+            ->withoutPeerNameVerification()
             ;
 
         return (new BindContext())->withTlsContext($tlsContext);
@@ -194,12 +199,10 @@ class RpcConnections
     protected function prepareClientContext(?string $fingerprint = null): ConnectContext
     {
         $tlsContext = (new ClientTlsContext())
-            ->withCaFile($this->trustStore->getCaPath() . '/ca_cert.pem')
             ->withCaPath($this->trustStore->getCaPath())
-            ->withPeerCapturing() ->withSni()
+            ->withPeerCapturing()
+            ->withSni()
             ->withCertificate($this->getMyConnectionCertificate())
-            // ->withSni()->withPeerName($this->certName)
-            ->withoutPeerVerification()
         ;
 
         if ($fingerprint) {
