@@ -11,6 +11,7 @@ use IMEdge\Metrics\Measurement;
 use IMEdge\Metrics\Metric;
 use IMEdge\Metrics\MetricDatatype;
 use IMEdge\Metrics\MetricsEvent;
+use IMEdge\Node\Application;
 use IMEdge\Node\Events;
 use IMEdge\Node\Services;
 use Psr\Log\LoggerInterface;
@@ -35,7 +36,10 @@ class InternalMetricsCollection
     ) {
         $this->uuidString = $this->nodeIdentifier->uuid->toString();
         $this->redis = $services->getRedisClient('IMEdge/internalMetrics');
-        $this->logger->notice('Redis connection for internal DataNode metrics is ready');
+        $this->logger->notice(sprintf(
+            'Redis connection for internal %s metrics is ready',
+            Application::PROCESS_NAME
+        ));
     }
 
     public function start(): void
