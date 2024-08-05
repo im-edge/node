@@ -220,7 +220,7 @@ class Features
             throw new InvalidArgumentException(sprintf(
                 "Path %s exists, but doesn't seem to be an %s feature",
                 $sourcePath,
-                Defaults::APPLICATION_NAME
+                Application::PROCESS_NAME
             ));
         }
         $link = $this->getEnabledFeaturesDirectory() . "/$name";
