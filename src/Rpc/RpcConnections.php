@@ -37,7 +37,7 @@ class RpcConnections
 {
     public ClientSslStoreInterface $sslStore;
     protected string $certName;
-    protected TrustStoreDirectory $trustStore;
+    public TrustStoreDirectory $trustStore;
 
     /** @var JsonRpcConnection[] */
     protected array $connections = [];
