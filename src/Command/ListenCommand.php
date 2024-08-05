@@ -22,7 +22,7 @@ class ListenCommand extends Command implements LoggerAwareInterface
         $this->setDescription('Listen on a given TCP socket address');
         $this->addOptions([
             Option::create(null, 'socket', GetOpt::REQUIRED_ARGUMENT)
-                ->setDescription('Listening socket, e.g. --listen 0.0.0.0:5661'),
+                ->setDescription('Listening socket, e.g. --socket 0.0.0.0:5660'),
             Option::create(null, 'persist')
                 ->setDescription('Persist listener, will be enabled at every start'),
         ]);
