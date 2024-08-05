@@ -183,12 +183,9 @@ class RpcConnections
     protected function prepareBindContext(): BindContext
     {
         $tlsContext = (new ServerTlsContext())
-            //->withCaFile($this->trustStore->getCaPath() . '/a_cert.pem')
             ->withCaPath($this->trustStore->getCaPath())
             ->withPeerCapturing()
-            ->withPeerVerification()
             ->withDefaultCertificate($this->getMyConnectionCertificate())
-            //->withoutPeerVerification()
             ;
 
         return (new BindContext())->withTlsContext($tlsContext);
