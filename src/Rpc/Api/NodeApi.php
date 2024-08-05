@@ -5,6 +5,7 @@ namespace IMEdge\Node\Rpc\Api;
 use Amp\Redis\RedisClient;
 use gipfl\DataType\Settings;
 use gipfl\Json\JsonString;
+use IMEdge\CertificateStore\CertificateHelper;
 use IMEdge\Inventory\NodeIdentifier;
 use IMEdge\JsonRpc\JsonRpcConnection;
 use IMEdge\Node\Inventory\RemoteInventory;
@@ -16,6 +17,8 @@ use IMEdge\RpcApi\ApiNamespace;
 use Psr\Log\LoggerInterface;
 use Ramsey\Uuid\UuidInterface;
 use Revolt\EventLoop;
+use Sop\CryptoEncoding\PEM;
+use Sop\X509\Certificate\Certificate;
 
 /**
  * TODO, listAvailableFeatures, enable/configureFeature, -> prefixed namespace
@@ -227,6 +230,36 @@ class NodeApi
         return (object) $result;
     }
 */
+
+    #[ApiMethod]
+    public function addTrustedCa(string $caCertificate): bool
+    {
+        $this->node->rpcConnections->trustStore->addCaCertificate(
+            Certificate::fromPEM(PEM::fromString($caCertificate))
+        );
+
+        return true;
+    }
+
+    #[ApiMethod]
+    public function getCsr(): string
+    {
+        $certName = $this->node->getName();
+        $sslStore = $this->node->rpcConnections->sslStore;
+
+        return CertificateHelper::generateCsr($certName, $sslStore->readPrivateKey($certName));
+    }
+
+    #[ApiMethod]
+    public function setSignedCertificate(string $certificate): bool
+    {
+        $sslStore = $this->node->rpcConnections->sslStore;
+        $sslStore->writeCertificate(
+            Certificate::fromPEM(PEM::fromString($certificate))
+        );
+
+        return true;
+    }
 
     #[ApiMethod]
     public function restart(): bool
