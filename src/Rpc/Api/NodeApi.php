@@ -77,7 +77,7 @@ class NodeApi
         $stream = 'db-stream-' . $this->node->getUuid()->toString();
 // TODO: pos - 1
         $result = [];
-        foreach ($this->redis->execute('XREVRANGE', $stream, $formerPos, '-', 'COUNT', 199) as [$streamPos, $row]) {
+        foreach ($this->redis->execute('XREVRANGE', $stream, $formerPos, '-', 'COUNT', 1000) as [$streamPos, $row]) {
             $hash = RedisResult::toHash($row);
             $hash->keyProperties = JsonString::decode($hash->keyProperties);
             $hash->value = JsonString::decode($hash->value);
