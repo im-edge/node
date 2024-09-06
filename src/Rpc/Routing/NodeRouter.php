@@ -2,10 +2,14 @@
 
 namespace IMEdge\Node\Rpc\Routing;
 
+use IMEdge\DistanceRouter\Route;
 use IMEdge\DistanceRouter\RouteList;
 use IMEdge\DistanceRouter\RoutingTable;
+use IMEdge\JsonRpc\JsonRpcConnection;
 use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
+use Ramsey\Uuid\Uuid;
+use Ramsey\Uuid\UuidInterface;
 
 class NodeRouter
 {
@@ -40,6 +44,25 @@ class NodeRouter
         $this->logger->notice('NodeRunner, new directly connected peer: ' . $peer->name);
     }
 
+    public function getConnectionFor(UuidInterface $target): ?JsonRpcConnection
+    {
+        $stringTarget = $target->toString();
+        if ($connection = $this->directlyConnected->getOptional($target->toString())) {
+            return $connection;
+        }
+
+        if ($route = $this->routingTable->active->getRouteTo($stringTarget)) {
+            return $this->directlyConnected->getOptional($route->via);
+        }
+
+        return null;
+    }
+
+    public function getActiveRoutes(): RouteList
+    {
+        return $this->routingTable->active;
+    }
+
     public function setPeerRoutes(Node $peer, RouteList $routes): void
     {
         if (!$this->hasPeer($peer)) {
@@ -69,13 +92,16 @@ class NodeRouter
         $this->peerRoutes[$name] = $routes;
     }
 
-
-    protected function removePeerByName(string $name): void
+    public function removePeerByName(string $name): void
     {
-        foreach ($this->peerRoutes[$name]->routes as $route) {
-            $this->routingTable->removeCandidate($route);
+        if (isset($this->peerRoutes[$name])) {
+            foreach ($this->peerRoutes[$name]->routes as $route) {
+                $this->routingTable->removeCandidate($route);
+            }
+            unset($this->peerRoutes[$name]);
         }
-        unset($this->peerRoutes[$name]);
-        unset($this->directlyConnected[$name]);
+        if ($this->directlyConnected->getOptional($name)) {
+            $this->directlyConnected->detach(new Node(Uuid::fromString($name), $name));
+        }
     }
 }
