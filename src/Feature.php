@@ -30,8 +30,6 @@ final class Feature
 
     public const ON_NODE_CONNECTED = 'nodeConnected';
     public const ON_NODE_DISCONNECTED = 'nodeDisconnected';
-    public const ON_CONNECTION = 'connection';
-    public const ON_CONNECTION_REMOVED = 'connectionRemoved';
     public const ON_INVENTORY_REGISTERED = 'inventory_registered';
 
     /** @var array<string, object> */
@@ -192,15 +190,6 @@ final class Feature
     {
         $this->logger->notice('Got a new connection subscriber');
         $this->connectionSubscribers[] = $connectionSubscriber;
-    }
-
-    /**
-     * @deprecated
-     * @return array<string, object>
-     */
-    final public function getRegisteredRpcNamespaces(): array
-    {
-        return $this->registeredRpcNamespaces;
     }
 
     /**

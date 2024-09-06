@@ -3,12 +3,9 @@
 namespace IMEdge\Node;
 
 use DirectoryIterator;
-use gipfl\Protocol\JsonRpc\JsonRpcConnection as OldJsonRpcConnection;
 use IMEdge\Filesystem\Directory;
 use IMEdge\Inventory\CentralInventory;
 use IMEdge\Inventory\NodeIdentifier;
-use IMEdge\Node\Network\ConnectionHandler;
-use IMEdge\Node\Network\DataNodeConnections;
 use IMEdge\Node\Rpc\Routing\Node;
 use IMEdge\Node\Rpc\Routing\NodeRouter;
 use InvalidArgumentException;
@@ -27,8 +24,6 @@ class Features
     public function __construct(
         protected readonly NodeIdentifier $nodeIdentifier,
         protected readonly NodeRouter $nodeRouter,
-        protected readonly ConnectionHandler $connectionHandler,
-        protected readonly DataNodeConnections $dataNodeConnections,
         protected readonly Services $services,
         protected readonly Events $events,
         protected string $baseDirectory,
@@ -43,8 +38,6 @@ class Features
         $features = new Features(
             $node->identifier,
             $node->nodeRouter,
-            $node->connectionHandler,
-            $node->dataNodeConnections,
             $node->services,
             $node->events,
             $node->getConfigDir(),
@@ -54,7 +47,8 @@ class Features
             $features->loadAll($node);
 
             foreach ($features->getLoaded() as $feature) {
-                $features->tellSubscribersAboutLoadedFeature($feature);
+                // Duplicate: $features->tellSubscribersAboutLoadedFeature($feature);
+                // TODO: Move this into loadAll?
                 foreach ($feature->getRegisteredRpcApis() as $rpcApi) {
                     try {
                         $node->controlApi->addApi($rpcApi);
@@ -83,9 +77,6 @@ class Features
             // $loaded->on(Feature::ON_INVENTORY_REGISTERED, function (CentralInventory $inventory) {
             // $this->setCentralInventory($inventory);
             // });
-            foreach ($feature->getRegisteredRpcNamespaces() as $registered => $nsHandler) {
-                $handler->registerRpcNamespace($registered, $nsHandler);
-            }
             //}
         }
     }
@@ -139,8 +130,6 @@ class Features
             $this->logger
         );
         // The feature registered an RPC connection. This allows talking to metric instances
-        $feature->on(Feature::ON_CONNECTION, $this->onConnectionRegisteredByFeature(...));
-        $feature->on(Feature::ON_CONNECTION_REMOVED, $this->onConnectionRemovedByFeature(...));
         $feature->on(Feature::ON_NODE_CONNECTED, $this->onNodeConnectedByFeature(...));
         $feature->on(Feature::ON_NODE_DISCONNECTED, $this->onNodeDisconnectedByFeature(...));
         $feature->register();
@@ -154,25 +143,6 @@ class Features
     protected function onNodeDisconnectedByFeature(Node $node): void
     {
         $this->nodeRouter->removePeer($node);
-    }
-
-    protected function onConnectionRegisteredByFeature(
-        OldJsonRpcConnection $connection,
-        string $peerAddress
-    ): void {
-        $this->connectionHandler->registerConnected($connection, $peerAddress);
-        $this->dataNodeConnections->onConnectedPeer(
-            $this->connectionHandler,
-            $connection,
-            $peerAddress
-        );
-    }
-
-    protected function onConnectionRemovedByFeature(
-        string $peerAddress
-    ): void {
-        $this->connectionHandler->removeConnected($peerAddress);
-        $this->dataNodeConnections->onDisconnect($peerAddress);
     }
 
     public function shutdown(): void
