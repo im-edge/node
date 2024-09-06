@@ -7,6 +7,9 @@ use React\Promise\Deferred;
 use React\Promise\Promise;
 use Revolt\EventLoop;
 
+/**
+ * @deprecated
+ */
 class LegacyDeferredResult
 {
     public static function success(mixed $result): Promise
