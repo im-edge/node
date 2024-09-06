@@ -8,10 +8,12 @@ use IMEdge\JsonRpc\Notification;
 use IMEdge\JsonRpc\Request;
 use IMEdge\JsonRpc\RequestHandler;
 use IMEdge\JsonRpc\Response;
-use IMEdge\Node\Rpc\Routing\NodeList;
+use IMEdge\Node\Rpc\Routing\NodeRouter;
 use IMEdge\RpcApi\Hydrator;
 use IMEdge\RpcApi\Reflection\MetaDataClass;
 use IMEdge\RpcApi\Reflection\MetaDataMethod;
+use InvalidArgumentException;
+use Psr\Log\LoggerInterface;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 use RuntimeException;
@@ -30,7 +32,8 @@ class ApiRunner implements RequestHandler
 
     public function __construct(
         protected string $identifier,
-        protected ?NodeList $nodeList = null,
+        protected ?NodeRouter $nodeRouter = null,
+        protected ?LoggerInterface $logger = null
     ) {
         Hydrator::registerType(UuidInterface::class, static function ($value) {
             return Uuid::fromString($value);
@@ -63,7 +66,7 @@ class ApiRunner implements RequestHandler
     public function handleRequest(Request $request): Response
     {
         if (
-            $this->nodeList
+            $this->nodeRouter
             && ($target = $request->getExtraProperty('target'))
             && ($target !== $this->identifier)
         ) {
@@ -85,7 +88,7 @@ class ApiRunner implements RequestHandler
                 try {
                     $value = Hydrator::hydrate($type->type, $value);
                 } catch (InvalidArgumentException $e) {
-                    $e = new \InvalidArgumentException(sprintf('%s:%s: %s', $meta->name, $key, $e->getMessage()));
+                    throw new InvalidArgumentException(sprintf('%s:%s: %s', $meta->name, $key, $e->getMessage()));
                 }
             }
         }
@@ -96,7 +99,7 @@ class ApiRunner implements RequestHandler
     public function handleNotification(Notification $notification): void
     {
         if (
-            $this->nodeList
+            $this->nodeRouter
             && ($target = $notification->getExtraProperty('target'))
             && ($target !== $this->identifier)
         ) {
@@ -127,27 +130,27 @@ class ApiRunner implements RequestHandler
 
     protected function handleRemoteRequest(Request $request, $target): Response
     {
-        if ($rpc = $this->nodeList->getOptional($target)) {
+        if ($rpc = $this->nodeRouter->getConnectionFor(Uuid::fromString($target))) {
             return $rpc->sendRequest($request);
-        } else {
-            if (!empty($this->nodeList->getNodes())) {
-                return new Response($request->id, null, new Error(self::NO_SUCH_TARGET, sprintf(
-                    'I am not %s. Connections: %s',
-                    $target,
-                    implode(', ', array_keys($this->nodeList->jsonSerialize())) // TODO: list uuids
-                )));
-            }
+        }
 
+        if (!empty($this->nodeRouter->directlyConnected->getNodes())) {
             return new Response($request->id, null, new Error(self::NO_SUCH_TARGET, sprintf(
-                'I am not %s and not connected to other nodes',
-                $target
+                'I am not %s. Connections: %s',
+                $target,
+                implode(', ', array_keys($this->nodeRouter->directlyConnected->jsonSerialize())) // TODO: list uuids
             )));
         }
+
+        return new Response($request->id, null, new Error(self::NO_SUCH_TARGET, sprintf(
+            'I am not %s and not connected to other nodes',
+            $target
+        )));
     }
 
     protected function handleNewRemoteNotification(Notification $notification, $target): void
     {
-        if ($rpc = $this->nodeList->getOptional($target)) {
+        if ($rpc = $this->nodeRouter->getConnectionFor($target)) {
             $rpc->sendPacket($notification);
         }
         // TODO: else log lost notification?
