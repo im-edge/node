@@ -8,6 +8,7 @@ use IMEdge\Inventory\CentralInventory;
 use IMEdge\Inventory\NodeIdentifier;
 use IMEdge\Node\Rpc\Routing\Node;
 use IMEdge\Node\Rpc\Routing\NodeRouter;
+use IMEdge\Node\Rpc\RpcPeerType;
 use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
 use Revolt\EventLoop;
@@ -70,6 +71,14 @@ class Features
 
     public function tellSubscribersAboutLoadedFeature(Feature $feature): void
     {
+        $connected = $this->nodeRouter->directlyConnected;
+        foreach ($feature->getConnectionSubscribers() as $subscriber) {
+            foreach ($connected->getNodes() as $node) {
+                $id = $node->uuid->toString();
+                // We assume full control
+                $subscriber->activateConnection($id, $connected->getOptional($id), RpcPeerType::CONTROL);
+            }
+        }
         // $this->logger->notice('Features::tellSubscribersAboutLoadedFeature:' . $feature->name);
         // TODO: unfinished, wrong!!
         foreach ($feature->getRpcRegistrationSubscribers() as $handler) {
