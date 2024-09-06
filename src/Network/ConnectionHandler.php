@@ -15,6 +15,8 @@ use Revolt\EventLoop;
  * JsonRpc ConnectionHandler
  *
  * Deals with connections to other data nodes. Is responsible for reconnects
+ *
+ * @deprecated
  */
 class ConnectionHandler
 {
@@ -34,7 +36,7 @@ class ConnectionHandler
     protected array $establishedConnections = [];
 
     public function __construct(
-        public readonly DataNodeConnections $dataNodeConnections,
+        // public readonly DataNodeConnections $dataNodeConnections,
         public readonly LoggerInterface $logger,
     ) {
     }

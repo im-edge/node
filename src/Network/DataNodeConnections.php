@@ -3,8 +3,6 @@
 namespace IMEdge\Node\Network;
 
 use Exception;
-use gipfl\Protocol\JsonRpc\Handler\NamespacedPacketHandler;
-use gipfl\Protocol\JsonRpc\JsonRpcConnection;
 use IMEdge\Node\NodeRunner;
 use Psr\Log\LoggerInterface;
 use React\EventLoop\Loop;
@@ -12,7 +10,7 @@ use React\EventLoop\Loop;
 use function array_key_first;
 
 /**
- * @deprecated soon
+ * @deprecated
  */
 class DataNodeConnections
 {
