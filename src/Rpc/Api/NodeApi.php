@@ -6,11 +6,13 @@ use Amp\Redis\RedisClient;
 use gipfl\DataType\Settings;
 use gipfl\Json\JsonString;
 use IMEdge\CertificateStore\CertificateHelper;
+use IMEdge\DistanceRouter\RouteList;
 use IMEdge\Inventory\NodeIdentifier;
 use IMEdge\JsonRpc\JsonRpcConnection;
 use IMEdge\Node\Inventory\RemoteInventory;
 use IMEdge\Node\NodeRunner;
 use IMEdge\Node\Rpc\ApiRunner;
+use IMEdge\Node\Rpc\Routing\NodeList;
 use IMEdge\RedisUtils\RedisResult;
 use IMEdge\RpcApi\ApiMethod;
 use IMEdge\RpcApi\ApiNamespace;
@@ -66,6 +68,34 @@ class NodeApi
     public function getAvailableMethods(): array
     {
         return $this->apiRunner->getKnownMethods();
+    }
+
+    #[ApiMethod]
+    public function getActiveRoutes(): RouteList
+    {
+        return $this->node->nodeRouter->getActiveRoutes();
+    }
+
+    #[ApiMethod]
+    public function getDirectlyConnectedNodes(): NodeList
+    {
+        return $this->node->nodeRouter->directlyConnected;
+    }
+
+    #[ApiMethod]
+    public function streamDbChanges(string $position): ?array
+    {
+        $blockMs = 15000;
+        $blockMs = 1;
+        $maxCount = 10000;
+        $xReadParams = ['XREAD', 'COUNT', (string) $maxCount, 'BLOCK', (string) $blockMs, 'STREAMS'];
+        $params = array_merge($xReadParams, ['db-stream-' . $this->node->identifier->uuid->toString()], [$position]);
+        $streams = $this->redis->execute(...$params);
+        if ($streams === null) {
+            return null;
+        }
+
+        return $streams[0];
     }
 
     /**
@@ -162,7 +192,7 @@ class NodeApi
                 $this->node->storeConfig($config);
             }
         }
-        $this->node->connectionHandler->connect($peerAddress);
+        $this->node->rpcConnections->connect($peerAddress);
 
         return true;
     }
@@ -180,7 +210,7 @@ class NodeApi
                 $this->node->storeConfig($config);
             }
         }
-        $this->node->connectionHandler->disconnect($peerAddress);
+        $this->node->rpcConnections->disconnect($peerAddress);
 
         return true;
     }
@@ -189,7 +219,6 @@ class NodeApi
     public function getConnections(): array
     {
         return $this->node->nodeRouter->directlyConnected->jsonSerialize();
-        return $this->node->connectionHandler->getConnections();
     }
 
     #[ApiMethod]
@@ -241,7 +270,7 @@ class NodeApi
     #[ApiMethod]
     public function getCsr(): string
     {
-        $certName = $this->node->getName();
+        $certName = $this->node->getUuid()->toString();
         $sslStore = $this->node->rpcConnections->sslStore;
 
         return CertificateHelper::generateCsr($certName, $sslStore->readPrivateKey($certName));
