@@ -9,8 +9,6 @@ use IMEdge\CertificateStore\ClientStore\ClientSslStoreDirectory;
 use IMEdge\Inventory\CentralInventory;
 use IMEdge\Inventory\NodeIdentifier;
 use IMEdge\Node\Monitoring\InternalMetricsCollection;
-use IMEdge\Node\Network\ConnectionHandler;
-use IMEdge\Node\Network\DataNodeConnections;
 use IMEdge\Node\Rpc\Api\CaApi;
 use IMEdge\Node\Rpc\Api\NodeApi;
 use IMEdge\Node\Rpc\Api\NtpApi;
@@ -47,11 +45,10 @@ class NodeRunner implements DaemonComponent
     protected const SOCKET_PATH = '/run/imedge';
     public const SOCKET_FILE = self::SOCKET_PATH . '/node.sock';
     public const CONFIG_PERSISTED_CONNECTIONS = 'connections';
+    public const CONFIG_LISTENERS = 'listeners';
     protected const DEFAULT_REDIS_BINARY = '/usr/bin/redis-server';
 
     public readonly Features $features;
-    public readonly DataNodeConnections $dataNodeConnections;
-    public readonly ConnectionHandler $connectionHandler;
     public readonly NodeIdentifier $identifier;
     public readonly Events $events;
     public readonly Services $services;
@@ -95,14 +92,15 @@ class NodeRunner implements DaemonComponent
             $this->newComponents['internalMetrics'] = $internalMetrics;
         });
         $this->nodeRouter = new NodeRouter(new Node($this->identifier->uuid, $this->identifier->name), $this->logger);
-        $this->dataNodeConnections = new DataNodeConnections($this, $this->logger);
-        $this->rpcConnections = new RpcConnections($this, null, $this->logger);
-        $this->connectionHandler = new ConnectionHandler($this->dataNodeConnections, $this->logger);
+        $this->features = Features::initialize($this, $this->logger);
+        $this->rpcConnections = new RpcConnections($this, $this->features, $this->logger);
         EventLoop::queue($this->launchRedis(...));
         $this->initializeRemoteControl();
-        $this->features = Features::initialize($this, $this->logger);
-        $this->connectionHandler->setConfiguredConnections(
+        $this->rpcConnections->setConfiguredConnections(
             $this->requireConfig()->getArray(self::CONFIG_PERSISTED_CONNECTIONS)
+        );
+        $this->rpcConnections->setConfiguredListeners(
+            $this->requireConfig()->getArray(self::CONFIG_LISTENERS)
         );
     }
 
@@ -110,7 +108,8 @@ class NodeRunner implements DaemonComponent
     {
         $this->controlApi = $api = new ApiRunner(
             $this->identifier->uuid->toString(),
-            $this->nodeRouter->directlyConnected
+            $this->nodeRouter,
+            $this->logger
         );
         $api->addApi(new NtpApi());
         $api->addApi(new NodeApi($this, $api, $this->logger));
