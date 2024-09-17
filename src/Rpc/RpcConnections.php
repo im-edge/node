@@ -277,6 +277,7 @@ class RpcConnections
             unset($this->established[$idx]);
             unset($this->connections[$remoteAddress->toString()]);
             $this->node->nodeRouter->removePeerByName($remoteName);
+            $this->tellFeaturesAboutLostConnection($remoteName);
             // Change information, if configured - otherwise forget ist
             $this->logger->notice(sprintf('Connection with %s has been closed', $remoteAddress->toString()));
         });
@@ -331,6 +332,29 @@ class RpcConnections
     {
         foreach ($this->features->getLoaded() as $feature) {
             $this->tellFeatureAboutConnection($feature, $connection, $peerIdentifier, $peerType);
+        }
+    }
+
+    public function tellFeatureAboutLostConnection(
+        Feature $feature,
+        string $peerIdentifier
+    ): void {
+        $this->logger->notice(sprintf(
+            ' - deactivating %s (%d connection subscribers)',
+            $feature->name,
+            count($feature->getConnectionSubscribers())
+        ));
+        foreach ($feature->getConnectionSubscribers() as $connectionSubscriber) {
+            $connectionSubscriber->deactivateConnection($peerIdentifier);
+        }
+    }
+
+    protected function tellFeaturesAboutLostConnection(
+        string $peerIdentifier
+    ): void
+    {
+        foreach ($this->features->getLoaded() as $feature) {
+            $this->tellFeatureAboutLostConnection($feature, $peerIdentifier);
         }
     }
 
