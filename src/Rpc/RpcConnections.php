@@ -17,6 +17,7 @@ use Amp\Socket\Socket;
 use Amp\Socket\SocketException;
 use Amp\Socket\TlsException;
 use Exception;
+use IMEdge\Async\Retry;
 use IMEdge\CertificateStore\CertificateHelper;
 use IMEdge\CertificateStore\ClientStore\ClientSslStoreDirectory;
 use IMEdge\CertificateStore\ClientStore\ClientSslStoreInterface;
@@ -389,6 +390,12 @@ class RpcConnections
             $this->prepareClientContext($fingerprint),
             $this->stopper->getCancellation()
         );
+        $socket->onClose(function () use ($peerAddress, $fingerprint) {
+            if (isset($this->configured[$peerAddress])) {
+                $this->logger->notice("Reconnecting to $peerAddress in 5s");
+                Retry::forever(fn () => $this->connect($peerAddress, $fingerprint), "Reconnecting to $peerAddress", 30, 5, 30, $this->logger);
+            }
+        });
 
         return $this->connectionEstablished($socket, ConnectionDirection::OUTGOING)
             ?? throw new Exception('Failed to connect');
