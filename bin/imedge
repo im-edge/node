@@ -27,7 +27,7 @@ error_reporting(E_ALL | E_STRICT);
 Process::setTitle(Application::PROCESS_NAME);
 Cli::clearProxySettings();
 EventLoop::setErrorHandler(function (Throwable $e) {
-    echo $e->getMessage() . ' - ' . $e->getFile() . ':' . $e->getLine() . "\n";
+    echo 'EventLoop error handler: ' . $e->getMessage() . ' - ' . $e->getFile() . ':' . $e->getLine() . "\n";
     echo $e->getTraceAsString();
     exit(1);
 });
