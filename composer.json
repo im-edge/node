@@ -30,7 +30,7 @@
     "gipfl/log": "^0.7",
     "imedge/async": ">=0.2",
     "imedge/certificate-store": ">=0.1",
-    "imedge/distance-router": ">=0.2",
+    "imedge/distance-router": ">=0.3",
     "imedge/filesystem": ">=0.1",
     "imedge/influxdb-streamer": ">=0.2",
     "imedge/inventory": ">=0.1",
