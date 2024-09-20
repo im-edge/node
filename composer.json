@@ -35,7 +35,7 @@
     "imedge/inventory": ">=0.1",
     "imedge/json": ">=0.1",
     "imedge/jsonrpc": ">=0.7",
-    "imedge/log": ">=0.7",
+    "imedge/log": ">=0.7.1",
     "imedge/metrics": ">=0.4",
     "imedge/process-runner": ">=0.3",
     "imedge/protocol-netstring": ">=0.3",
