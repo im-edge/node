@@ -32,7 +32,7 @@
     "imedge/certificate-store": ">=0.1",
     "imedge/distance-router": ">=0.3",
     "imedge/filesystem": ">=0.1",
-    "imedge/influxdb-streamer": ">=0.2",
+    "imedge/influxdb-streamer": ">=0.4",
     "imedge/inventory": ">=0.1",
     "imedge/jsonrpc": ">=0.7",
     "imedge/log": ">=0.6",
