@@ -40,7 +40,7 @@
     "imedge/process-runner": ">=0.3",
     "imedge/protocol-netstring": ">=0.3",
     "imedge/protocol-ntp": ">=0.1",
-    "imedge/redis-runner": ">=0.1",
+    "imedge/redis-runner": ">=0.2",
     "imedge/redis-tables": ">=0.6",
     "imedge/redis-utils": ">=0.2",
     "imedge/rpc-api": ">=0.3",
