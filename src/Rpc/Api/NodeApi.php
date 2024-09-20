@@ -3,11 +3,11 @@
 namespace IMEdge\Node\Rpc\Api;
 
 use Amp\Redis\RedisClient;
-use gipfl\DataType\Settings;
-use gipfl\Json\JsonString;
 use IMEdge\CertificateStore\CertificateHelper;
+use IMEdge\Config\Settings;
 use IMEdge\DistanceRouter\RouteList;
 use IMEdge\Inventory\NodeIdentifier;
+use IMEdge\Json\JsonString;
 use IMEdge\JsonRpc\JsonRpcConnection;
 use IMEdge\Node\Inventory\RemoteInventory;
 use IMEdge\Node\NodeRunner;

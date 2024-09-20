@@ -2,7 +2,7 @@
 
 namespace IMEdge\Node\Network;
 
-use gipfl\Json\JsonSerialization;
+use IMEdge\Json\JsonSerialization;
 
 class ConnectionInformation implements JsonSerialization
 {

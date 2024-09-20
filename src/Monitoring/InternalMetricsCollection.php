@@ -3,9 +3,9 @@
 namespace IMEdge\Node\Monitoring;
 
 use Amp\Redis\RedisClient;
-use gipfl\Json\JsonString;
 use gipfl\LinuxHealth\Memory;
 use IMEdge\Inventory\NodeIdentifier;
+use IMEdge\Json\JsonString;
 use IMEdge\Metrics\Ci;
 use IMEdge\Metrics\Measurement;
 use IMEdge\Metrics\Metric;

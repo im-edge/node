@@ -3,12 +3,12 @@
 namespace IMEdge\Node;
 
 use Evenement\EventEmitterTrait;
-use gipfl\DataType\Settings;
-use gipfl\Json\JsonString;
 use gipfl\Log\PrefixLogger;
+use IMEdge\Config\Settings;
 use IMEdge\Filesystem\Directory;
 use IMEdge\Inventory\CentralInventory;
 use IMEdge\Inventory\NodeIdentifier;
+use IMEdge\Json\JsonString;
 use IMEdge\Node\FeatureRegistration\RpcRegistrationSubscriberInterface;
 use IMEdge\Node\Network\ConnectionSubscriberInterface;
 use IMEdge\Node\Rpc\Routing\Node;

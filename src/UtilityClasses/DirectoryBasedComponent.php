@@ -2,9 +2,9 @@
 
 namespace IMEdge\Node\UtilityClasses;
 
-use gipfl\DataType\Settings;
-use gipfl\Json\JsonString;
+use IMEdge\Config\Settings;
 use IMEdge\Filesystem\Directory;
+use IMEdge\Json\JsonString;
 use Psr\Log\LoggerInterface;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;

@@ -2,7 +2,7 @@
 
 namespace IMEdge\Node\Rpc\Routing;
 
-use gipfl\Json\JsonSerialization;
+use IMEdge\Json\JsonSerialization;
 use IMEdge\JsonRpc\JsonRpcConnection;
 use RuntimeException;
 

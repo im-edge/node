@@ -2,7 +2,7 @@
 
 namespace IMEdge\Node\Rpc\UnixSocket;
 
-use gipfl\Json\JsonSerialization;
+use IMEdge\Json\JsonSerialization;
 use stdClass;
 
 class UnixSocketPeer implements JsonSerialization
