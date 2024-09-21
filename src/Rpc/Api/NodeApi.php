@@ -13,6 +13,7 @@ use IMEdge\Node\Inventory\RemoteInventory;
 use IMEdge\Node\NodeRunner;
 use IMEdge\Node\Rpc\ApiRunner;
 use IMEdge\Node\Rpc\Routing\NodeList;
+use IMEdge\RedisTables\RedisTables;
 use IMEdge\RedisUtils\RedisResult;
 use IMEdge\RpcApi\ApiMethod;
 use IMEdge\RpcApi\ApiNamespace;
@@ -89,7 +90,9 @@ class NodeApi
         $blockMs = 1;
         $maxCount = 10000;
         $xReadParams = ['XREAD', 'COUNT', (string) $maxCount, 'BLOCK', (string) $blockMs, 'STREAMS'];
-        $params = array_merge($xReadParams, ['db-stream-' . $this->node->identifier->uuid->toString()], [$position]);
+        $params = array_merge($xReadParams, [
+            RedisTables::STREAM_NAME_PREFIX . $this->node->identifier->uuid->toString()
+        ], [$position]);
         $streams = $this->redis->execute(...$params);
         if ($streams === null) {
             return null;
@@ -104,7 +107,7 @@ class NodeApi
     #[ApiMethod]
     public function getDbStream(string $formerPos = '+'): array
     {
-        $stream = 'db-stream-' . $this->node->getUuid()->toString();
+        $stream = RedisTables::STREAM_NAME_PREFIX . $this->node->getUuid()->toString();
 // TODO: pos - 1
         $result = [];
         foreach ($this->redis->execute('XREVRANGE', $stream, $formerPos, '-', 'COUNT', 1000) as [$streamPos, $row]) {
