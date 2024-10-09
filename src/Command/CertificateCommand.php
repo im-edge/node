@@ -6,7 +6,7 @@ use GetOpt\ArgumentException\Missing;
 use GetOpt\Command;
 use GetOpt\GetOpt;
 use GetOpt\Option;
-use IMEdge\Node\NodeRunner;
+use IMEdge\Node\ApplicationContext;
 use IMEdge\Node\Rpc\SimpleClient;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
@@ -28,7 +28,7 @@ class CertificateCommand extends Command implements LoggerAwareInterface
 
     public function handle(GetOpt $options): void
     {
-        $rpc = new SimpleClient(NodeRunner::SOCKET_FILE, $this->logger);
+        $rpc = new SimpleClient(ApplicationContext::getControlSocketPath(), $this->logger);
         $cert = $options->getOption('cert');
         if ($cert === null) {
             throw new Missing("Option 'cert' is required");

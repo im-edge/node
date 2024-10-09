@@ -42,8 +42,6 @@ class NodeRunner implements DaemonComponent
     protected const SUPPORTED_CONFIG_VERSIONS = [
         self::CONFIG_VERSION,
     ];
-    protected const SOCKET_PATH = '/run/imedge';
-    public const SOCKET_FILE = self::SOCKET_PATH . '/node.sock';
     public const CONFIG_PERSISTED_CONNECTIONS = 'connections';
     public const CONFIG_LISTENERS = 'listeners';
     protected const DEFAULT_REDIS_BINARY = '/usr/bin/redis-server';
@@ -115,7 +113,7 @@ class NodeRunner implements DaemonComponent
         $api->addApi(new NodeApi($this, $api, $this->logger));
         $api->addApi(new CaApi($this, null, $this->logger));
         $this->controlSocket = new ControlConnections($this, $this->controlApi, $this->logger);
-        $this->controlSocket->bind(self::SOCKET_FILE);
+        $this->controlSocket->bind(ApplicationContext::getControlSocketPath());
     }
 
     public function stop(): void

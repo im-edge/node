@@ -6,7 +6,7 @@ use GetOpt\ArgumentException\Missing;
 use GetOpt\Command;
 use GetOpt\GetOpt;
 use GetOpt\Option;
-use IMEdge\Node\NodeRunner;
+use IMEdge\Node\ApplicationContext;
 use IMEdge\Node\Rpc\SimpleClient;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
@@ -35,7 +35,7 @@ class ListenCommand extends Command implements LoggerAwareInterface
             throw new Missing("Option 'socket' is required");
         }
         $this->logger->debug('Listening on ' . $socket);
-        $rpc = new SimpleClient(NodeRunner::SOCKET_FILE, $this->logger);
+        $rpc = new SimpleClient(ApplicationContext::getControlSocketPath(), $this->logger);
         try {
             if ($rpc->request('node.listen', [$socket, (bool) $options->getOption('persist')])) {
                 $this->logger->notice("Listening on $socket");

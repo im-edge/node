@@ -7,7 +7,7 @@ use GetOpt\Command;
 use GetOpt\GetOpt;
 use GetOpt\Option;
 use IMEdge\Node\Application;
-use IMEdge\Node\NodeRunner;
+use IMEdge\Node\ApplicationContext;
 use IMEdge\Node\Rpc\SimpleClient;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
@@ -40,7 +40,7 @@ class ConnectCommand extends Command implements LoggerAwareInterface
             throw new Missing("Option 'to' is required");
         }
         $this->logger->debug('Connecting to ' . $to);
-        $rpc = new SimpleClient(NodeRunner::SOCKET_FILE, $this->logger);
+        $rpc = new SimpleClient(ApplicationContext::getControlSocketPath(), $this->logger);
         try {
             $result = $rpc->request('node.connect', [$to, (bool) $options->getOption('persist')]);
             // TODO: distinct connected, already connected, connection pending...

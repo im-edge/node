@@ -7,7 +7,7 @@ use GetOpt\Command;
 use GetOpt\GetOpt;
 use GetOpt\Option;
 use IMEdge\Node\Application;
-use IMEdge\Node\NodeRunner;
+use IMEdge\Node\ApplicationContext;
 use IMEdge\Node\Rpc\SimpleClient;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
@@ -39,7 +39,7 @@ class DisconnectCommand extends Command implements LoggerAwareInterface
             throw new Missing("Option 'from' is required");
         }
         $this->logger->debug('Disconnecting from ' . $from);
-        $rpc = new SimpleClient(NodeRunner::SOCKET_FILE, $this->logger);
+        $rpc = new SimpleClient(ApplicationContext::getControlSocketPath(), $this->logger);
         try {
             $rpc->request('node.disconnect', [$from, (bool) $options->getOption('persist')]);
             // TODO: distinct connected, already connected, connection pending... should we really wait? Parameter?

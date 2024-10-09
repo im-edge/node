@@ -6,7 +6,7 @@ use GetOpt\ArgumentException\Missing;
 use GetOpt\Command;
 use GetOpt\GetOpt;
 use GetOpt\Option;
-use IMEdge\Node\NodeRunner;
+use IMEdge\Node\ApplicationContext;
 use IMEdge\Node\Rpc\SimpleClient;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
@@ -32,7 +32,7 @@ class SignCommand extends Command implements LoggerAwareInterface
         if ($csr === null) {
             throw new Missing("Option 'csr' is required");
         }
-        $rpc = new SimpleClient(NodeRunner::SOCKET_FILE, $this->logger);
+        $rpc = new SimpleClient(ApplicationContext::getControlSocketPath(), $this->logger);
         try {
             if ($cert = $rpc->request('ca.sign', [$csr])) {
                 echo "$cert\n";

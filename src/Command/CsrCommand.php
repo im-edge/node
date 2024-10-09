@@ -4,7 +4,7 @@ namespace IMEdge\Node\Command;
 
 use GetOpt\Command;
 use GetOpt\GetOpt;
-use IMEdge\Node\NodeRunner;
+use IMEdge\Node\ApplicationContext;
 use IMEdge\Node\Rpc\SimpleClient;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
@@ -22,7 +22,7 @@ class CsrCommand extends Command implements LoggerAwareInterface
 
     public function handle(GetOpt $options): void
     {
-        $rpc = new SimpleClient(NodeRunner::SOCKET_FILE, $this->logger);
+        $rpc = new SimpleClient(ApplicationContext::getControlSocketPath(), $this->logger);
         try {
             echo $rpc->request('node.getCsr') . "\n";
             EventLoop::queue(fn () => exit(0));

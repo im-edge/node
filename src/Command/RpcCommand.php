@@ -7,7 +7,7 @@ use GetOpt\Command;
 use GetOpt\GetOpt;
 use GetOpt\Option;
 use IMEdge\Node\Application;
-use IMEdge\Node\NodeRunner;
+use IMEdge\Node\ApplicationContext;
 use IMEdge\Node\Rpc\SimpleClient;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
@@ -37,7 +37,7 @@ class RpcCommand extends Command implements LoggerAwareInterface
         if ($command === null) {
             throw new Missing("Option 'command' is required");
         }
-        $rpc = new SimpleClient(NodeRunner::SOCKET_FILE, $this->logger);
+        $rpc = new SimpleClient(ApplicationContext::getControlSocketPath(), $this->logger);
         if ($target = $options->getOption('target')) {
             $rpc->setTarget($target);
         }
