@@ -8,8 +8,6 @@ use IMEdge\Config\Settings;
 use IMEdge\DistanceRouter\RouteList;
 use IMEdge\Inventory\NodeIdentifier;
 use IMEdge\Json\JsonString;
-use IMEdge\JsonRpc\JsonRpcConnection;
-use IMEdge\Node\Inventory\RemoteInventory;
 use IMEdge\Node\NodeRunner;
 use IMEdge\Node\Rpc\ApiRunner;
 use IMEdge\Node\Rpc\Routing\NodeList;
@@ -18,7 +16,6 @@ use IMEdge\RedisUtils\RedisResult;
 use IMEdge\RpcApi\ApiMethod;
 use IMEdge\RpcApi\ApiNamespace;
 use Psr\Log\LoggerInterface;
-use Ramsey\Uuid\UuidInterface;
 use Revolt\EventLoop;
 use Sop\CryptoEncoding\PEM;
 use Sop\X509\Certificate\Certificate;
@@ -222,23 +219,6 @@ class NodeApi
     public function getConnections(): array
     {
         return $this->node->nodeRouter->directlyConnected->jsonSerialize();
-    }
-
-    #[ApiMethod]
-    public function setRemoteInventory(
-        JsonRpcConnection $connection,
-        UuidInterface $datanodeUuid,
-        array $tablePositions
-    ): bool {
-        $this->logger->notice('GOT REMOTE INVENTORY');
-        $this->node->setCentralInventory(new RemoteInventory(
-            $connection,
-            $datanodeUuid,
-            $tablePositions,
-            $this->logger
-        ));
-
-        return true;
     }
 /*
     public function getDataNodeConnectionsRequest(): array
