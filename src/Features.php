@@ -107,16 +107,7 @@ class Features
         }
         foreach ($this->getLoaded() as $feature) {
             $this->tellSubscribersAboutLoadedFeature($feature);
-            $this->applyFeatureEventHandlers($feature, $node);
         }
-    }
-
-    public function applyFeatureEventHandlers(Feature $feature, NodeRunner $node): void
-    {
-        // $this->logger->notice('DataNode::applyFeatureEventHandlers:' . $feature->name);
-        $feature->on(Feature::ON_INVENTORY_REGISTERED, function (CentralInventory $inventory) use ($node) {
-            $node->setCentralInventory($inventory);
-        });
     }
 
     public function hasLoaded(string $name): bool

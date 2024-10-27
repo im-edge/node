@@ -6,7 +6,6 @@ use Amp\DeferredFuture;
 use IMEdge\CertificateStore\CaStore\CaStoreDirectory;
 use IMEdge\CertificateStore\CertificationAuthority;
 use IMEdge\CertificateStore\ClientStore\ClientSslStoreDirectory;
-use IMEdge\Inventory\CentralInventory;
 use IMEdge\Inventory\NodeIdentifier;
 use IMEdge\Node\Monitoring\InternalMetricsCollection;
 use IMEdge\Node\Rpc\Api\CaApi;
@@ -19,7 +18,6 @@ use IMEdge\Node\Rpc\Routing\NodeRouter;
 use IMEdge\Node\Rpc\RpcConnections;
 use IMEdge\Node\UtilityClasses\DirectoryBasedComponent;
 use IMEdge\RedisRunner\RedisRunner;
-use IMEdge\RedisTables\RedisTableSubscriber;
 use IMEdge\SimpleDaemon\DaemonComponent;
 use IMEdge\SimpleDaemon\Process;
 use Revolt\EventLoop;
@@ -52,8 +50,6 @@ class NodeRunner implements DaemonComponent
     public readonly Services $services;
     protected ?CertificationAuthority $ca = null;
     protected ?RedisRunner $redisRunner = null;
-    /** @var RedisTableSubscriber[] */
-    protected array $redisTableSubscribers = [];
     protected DeferredFuture|string $redisSocket;
     protected array $newComponents = [];
     public RpcConnections $rpcConnections;
@@ -112,15 +108,14 @@ class NodeRunner implements DaemonComponent
         $api->addApi(new NtpApi());
         $api->addApi(new NodeApi($this, $api, $this->logger));
         $api->addApi(new CaApi($this, null, $this->logger));
+        $api->addApi($this->workerInstances);
+
         $this->controlSocket = new ControlConnections($this, $this->controlApi, $this->logger);
         $this->controlSocket->bind(ApplicationContext::getControlSocketPath());
     }
 
     public function stop(): void
     {
-        foreach ($this->redisTableSubscribers as $subscriber) {
-            $subscriber->stop();
-        }
         $pending = [
             async($this->features->shutdown(...))
         ];
@@ -136,29 +131,6 @@ class NodeRunner implements DaemonComponent
         $this->stop();
         $this->logger->notice('Shutdown completed, restarting myself');
         EventLoop::delay(0.2, Process::restart(...));
-    }
-
-    public function setCentralInventory(CentralInventory $inventory): void
-    {
-        $this->logger->notice('This node got an Inventory');
-        foreach ($this->redisTableSubscribers as $name => $subscriber) {
-            $this->logger->notice('Stopping Redis Table Subscriber: ' . $name);
-            $subscriber->stop();
-        }
-        $this->redisTableSubscribers = [];
-        $tables = $inventory->loadTableSyncPositions($this->identifier);
-        $this->logger->notice('DataNode got table positions: ' . count($tables));
-        $this->redisTableSubscribers['main'] = new RedisTableSubscriber(
-            $this->getRedisSocket(),
-            $this->getUuid(),
-            $this->logger
-        );
-        foreach ($tables as $table => $position) {
-            $this->redisTableSubscribers['main']->setStreamPosition($table, $position);
-        }
-        foreach ($this->redisTableSubscribers as $subscriber) {
-            $subscriber->setCentralInventory($inventory);
-        }
     }
 
     public function getFeatures(): Features
