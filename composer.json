@@ -14,6 +14,11 @@
       "IMEdge\\Node\\": "src"
     }
   },
+  "scripts": {
+    "post-update-cmd": [
+      "packaging/bin/apply-patches.sh"
+    ]
+  },
   "require": {
     "php": ">=8.1",
     "ext-ctype": "*",

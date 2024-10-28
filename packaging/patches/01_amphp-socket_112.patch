@@ -1,0 +1,158 @@
+From ff30eac2a44f31c91f73c45464dfdf6bd89f3e4a Mon Sep 17 00:00:00 2001
+From: Thomas Gelf <thomas@gelf.net>
+Date: Mon, 5 Aug 2024 12:29:05 +0200
+Subject: [PATCH] TlsContext: allow disabling verify peer name
+
+Motivation: servers accepting connections from trusted peers do not know the
+expected peer name in advance. Therefore, it must be possible to accept incoming
+connections (validating their client certificate) without being forced to
+specify an expected client name.
+
+You do not need this when using amphp/socket to run your very own public web
+server, but it is a requirement when running every other kind of service based
+on trusted client certificates (with more than one client). Similar (but not the
+same) use cases applies with clients, that should connect to trusted peers, w/o
+knowing their name in advance.
+
+This patch tries to address this, while preserving compatibility with the
+current behaviour.
+---
+ src/ClientTlsContext.php      | 40 ++++++++++++++++++++++++++++++++++-
+ src/ServerTlsContext.php      | 38 ++++++++++++++++++++++++++++++++-
+ 2 files changed, 76 insertions(+), 2 deletions(-)
+
+diff --git a/src/ClientTlsContext.php b/src/ClientTlsContext.php
+index 7dc6182..6724542 100644
+--- a/src/ClientTlsContext.php
++++ b/src/ClientTlsContext.php
+@@ -22,6 +22,8 @@ final class ClientTlsContext
+ 
+     private bool $verifyPeer = true;
+ 
++    private bool $verifyPeerName = true;
++
+     private int $verifyDepth = 10;
+ 
+     private ?array $peerFingerprint = null;
+@@ -127,6 +129,8 @@ public function withoutPeerVerification(): self
+     {
+         $clone = clone $this;
+         $clone->verifyPeer = false;
++        // This is for compatibility with the former behaviour:
++        $clone->verifyPeerName = false;
+ 
+         return $clone;
+     }
+@@ -139,6 +143,40 @@ public function hasPeerVerification(): bool
+         return $this->verifyPeer;
+     }
+ 
++    /**
++     * Enable peer name verification, this is the default with verifyPeer enabled.
++     *
++     * @return self Cloned, modified instance.
++     */
++    public function withPeerNameVerification(): self
++    {
++        $clone = clone $this;
++        $clone->verifyPeerName = true;
++
++        return $clone;
++    }
++
++    /**
++     * Disable peer name verification.
++     *
++     * @return self Cloned, modified instance.
++     */
++    public function withoutPeerNameVerification(): self
++    {
++        $clone = clone $this;
++        $clone->verifyPeerName = false;
++
++        return $clone;
++    }
++
++    /**
++     * @return bool Whether peer verification is enabled.
++     */
++    public function hasPeerNameVerification(): bool
++    {
++        return $this->verifyPeerName;
++    }
++
+     /**
+      * Maximum chain length the peer might present including the certificates in the local trust store.
+      *
+@@ -452,7 +490,7 @@ public function toStreamContextArray(): array
+             'crypto_method' => $this->toStreamCryptoMethod(),
+             'peer_name' => $this->peerName,
+             'verify_peer' => $this->verifyPeer,
+-            'verify_peer_name' => $this->verifyPeer,
++            'verify_peer_name' => $this->verifyPeerName,
+             'verify_depth' => $this->verifyDepth,
+             'ciphers' => $this->ciphers ?? \OPENSSL_DEFAULT_STREAM_CIPHERS,
+             'capture_peer_cert' => $this->capturePeer,
+diff --git a/src/ServerTlsContext.php b/src/ServerTlsContext.php
+index 46da393..eeec1b7 100644
+--- a/src/ServerTlsContext.php
++++ b/src/ServerTlsContext.php
+@@ -58,6 +58,8 @@ public static function fromServerResource($socket): ?self
+ 
+     private bool $verifyPeer = false;
+ 
++    private bool $verifyPeerName = true;
++
+     private int $verifyDepth = 10;
+ 
+     private ?string $ciphers = null;
+@@ -166,6 +168,40 @@ public function hasPeerVerification(): bool
+         return $this->verifyPeer;
+     }
+ 
++    /**
++     * Enable peer name verification, this is the default with verifyPeer enabled.
++     *
++     * @return self Cloned, modified instance.
++     */
++    public function withPeerNameVerification(): self
++    {
++        $clone = clone $this;
++        $clone->verifyPeerName = true;
++
++        return $clone;
++    }
++
++    /**
++     * Disable peer name verification.
++     *
++     * @return self Cloned, modified instance.
++     */
++    public function withoutPeerNameVerification(): self
++    {
++        $clone = clone $this;
++        $clone->verifyPeerName = false;
++
++        return $clone;
++    }
++
++    /**
++     * @return bool Whether peer verification is enabled.
++     */
++    public function hasPeerNameVerification(): bool
++    {
++        return $this->verifyPeer && $this->verifyPeerName;
++    }
++
+     /**
+      * Maximum chain length the peer might present including the certificates in the local trust store.
+      *
+@@ -437,7 +473,7 @@ public function toStreamContextArray(): array
+             'crypto_method' => $this->toStreamCryptoMethod(),
+             'peer_name' => $this->peerName,
+             'verify_peer' => $this->verifyPeer,
+-            'verify_peer_name' => $this->verifyPeer,
++            'verify_peer_name' => $this->verifyPeer && $this->verifyPeerName,
+             'verify_depth' => $this->verifyDepth,
+             'ciphers' => $this->ciphers ?? \OPENSSL_DEFAULT_STREAM_CIPHERS,
+             'honor_cipher_order' => true,
