@@ -54,7 +54,6 @@
     "laminas/laminas-db": "^2.18",
     "ramsey/uuid": "^4.7",
     "revolt/event-loop": "^1.0",
-    "revolt/event-loop-adapter-react": "^1.1",
     "ulrichsg/getopt-php": "^4.0"
   }
 }
