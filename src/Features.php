@@ -4,7 +4,6 @@ namespace IMEdge\Node;
 
 use DirectoryIterator;
 use IMEdge\Filesystem\Directory;
-use IMEdge\Inventory\CentralInventory;
 use IMEdge\Inventory\NodeIdentifier;
 use IMEdge\Node\Rpc\Routing\Node;
 use IMEdge\Node\Rpc\Routing\NodeRouter;
@@ -78,15 +77,6 @@ class Features
                 // We assume full control
                 $subscriber->activateConnection($id, $connected->getOptional($id), RpcPeerType::CONTROL);
             }
-        }
-        // $this->logger->notice('Features::tellSubscribersAboutLoadedFeature:' . $feature->name);
-        // TODO: unfinished, wrong!!
-        foreach ($feature->getRpcRegistrationSubscribers() as $handler) {
-            // foreach ($this->features->getLoaded() as $loaded) {
-            // $loaded->on(Feature::ON_INVENTORY_REGISTERED, function (CentralInventory $inventory) {
-            // $this->setCentralInventory($inventory);
-            // });
-            //}
         }
     }
 

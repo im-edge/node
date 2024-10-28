@@ -5,7 +5,6 @@ namespace IMEdge\Node;
 use Evenement\EventEmitterTrait;
 use IMEdge\Config\Settings;
 use IMEdge\Filesystem\Directory;
-use IMEdge\Inventory\CentralInventory;
 use IMEdge\Inventory\NodeIdentifier;
 use IMEdge\Json\JsonString;
 use IMEdge\Log\PrefixLogger;
@@ -14,15 +13,12 @@ use IMEdge\Node\Network\ConnectionSubscriberInterface;
 use IMEdge\Node\Rpc\Routing\Node;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
-use React\Promise\PromiseInterface;
-use Revolt\EventLoop;
 use RuntimeException;
 use Throwable;
 
 use function Amp\async;
 use function Amp\Future\await;
 use function Amp\Future\awaitAll;
-use function React\Async\await as reactAwait;
 
 final class Feature
 {
@@ -30,7 +26,6 @@ final class Feature
 
     public const ON_NODE_CONNECTED = 'nodeConnected';
     public const ON_NODE_DISCONNECTED = 'nodeDisconnected';
-    public const ON_INVENTORY_REGISTERED = 'inventory_registered';
 
     /** @var array<string, object> */
     private array $registeredRpcNamespaces = [];
@@ -85,9 +80,6 @@ final class Feature
                     return null;
                 }
 
-                if ($result instanceof PromiseInterface) {
-                    $result = reactAwait($result);
-                }
                 return $result;
             });
         }
@@ -224,19 +216,6 @@ final class Feature
     final public function disconnectNode(Node $node): void
     {
         $this->emit(self::ON_NODE_DISCONNECTED, [$node]);
-    }
-
-    final protected function registerInventory(CentralInventory $inventory): void
-    {
-        EventLoop::queue(function () use ($inventory) {
-            // TODO: verify, that this is late enough!
-            try {
-                $this->emit(self::ON_INVENTORY_REGISTERED, [$inventory]);
-                $this->logger->notice('Inventory has been registered');
-            } catch (Throwable $e) {
-                $this->logger->error('Inventory registration failed: ' . $e->getMessage());
-            }
-        });
     }
 
     final public function getBinaryFile(string $binaryFile): string
