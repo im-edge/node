@@ -1,0 +1,101 @@
+#!/usr/bin/env php
+<?php
+
+use Amp\ByteStream\ReadableResourceStream;
+use Amp\ByteStream\WritableResourceStream;
+use GetOpt\ArgumentException;
+use GetOpt\GetOpt;
+use GetOpt\Option;
+use IMEdge\Inventory\NodeIdentifier;
+use IMEdge\JsonRpc\JsonRpcConnection;
+use IMEdge\Log\Filter\LogLevelFilter;
+use IMEdge\Log\Logger;
+use IMEdge\Log\LogHelper;
+use IMEdge\Log\ProcessLogger;
+use IMEdge\Log\Writer\JsonRpcConnectionWriter;
+use IMEdge\Node\Application;
+use IMEdge\Node\ApplicationContext;
+use IMEdge\Node\Rpc\Api\WorkerApi;
+use IMEdge\Node\Rpc\ApiRunner;
+use IMEdge\Protocol\NetString\NetStringConnection;
+use IMEdge\SimpleDaemon\Process;
+use IMEdge\SimpleDaemon\SimpleDaemon;
+use Ramsey\Uuid\Uuid;
+use Revolt\EventLoop;
+
+require_once dirname(__DIR__) . '/vendor/autoload.php';
+error_reporting(E_ALL | E_STRICT);
+
+$options = new GetOpt(null, [GetOpt::SETTING_STRICT_OPERANDS => true]);
+$options->addOptions([
+    Option::create('v', 'verbose')->setDescription('Enable verbose logging'),
+    Option::create('d', 'debug')->setDescription('Enable debug logging')
+]);
+
+try {
+    $options->process();
+} catch (ArgumentException $e) {
+    echo $options->getHelpText();
+    exit(1);
+}
+
+$uuid = Uuid::uuid4(); // TODO: optionally from parameter!
+$processTitle = Application::PROCESS_NAME . "::worker::" . $uuid->toString();
+
+$featureName = $options->getOperand('feature');
+Process::setTitle(Application::PROCESS_NAME . "::worker"); // TODO: add instance?
+$logger = ProcessLogger::create(Application::LOG_NAME . "/$featureName", $options);
+LogHelper::logEventloopErrors($logger, "Uncaught sub-process ($featureName) error: ");
+
+try {
+    $netString = new NetStringConnection(new ReadableResourceStream(STDIN), new WritableResourceStream(STDOUT));
+    $api = new ApiRunner($uuid->toString());
+    $jsonRpc = new JsonRpcConnection($netString, $netString, $api, $logger);
+    $logWriter = new JsonRpcConnectionWriter($jsonRpc);
+    $logger = new Logger();
+    if (! $options->getOption('debug')) {
+        if ($options->getOption('verbose')) {
+            $logger->addFilter(new LogLevelFilter('info'));
+        } else {
+            $logger->addFilter(new LogLevelFilter('notice'));
+        }
+    }
+
+    $logger->addWriter($logWriter);
+    $damon = new SimpleDaemon();
+    $damon->setLogger($logger);
+    $netString->onClose($damon->shutdown(...)); // TODO: JsonRPC->onClose() ?
+} catch (Throwable $e) {
+    echo $e->getMessage() . "\n";
+    echo $e->getTraceAsString();
+    exit(1);
+}
+
+try {
+    $settings = ApplicationContext::requireSettings();
+    foreach (ApplicationContext::listEnabledModulesWithDirectory() as $moduleName => $moduleDirectory) {
+        $autoloadFile = "$moduleDirectory/vendor/autoload.php";
+        if (file_exists($autoloadFile)) {
+            require_once $autoloadFile;
+        }
+    }
+    LogHelper::catchStdOut($logger);
+    $workerApi = new WorkerApi(
+        $uuid,
+        new NodeIdentifier(
+            Uuid::fromString($settings->getRequired('uuid')),
+            $settings->getRequired('name'),
+            gethostbyaddr(gethostbyname(gethostname()))
+        ),
+        $logger
+    );
+    $workerApi->on(WorkerApi::ON_SHUTDOWN_REQUESTED, $damon->shutdown(...));
+    $api->addApi($workerApi);
+    $damon->attachTask($workerApi);
+    posix_setsid(); // TODO: Should be done by the parent for us
+    $damon->run();
+} catch (Throwable $e) {
+    $logger->error($e->getMessage() . ' (' . $e->getFile() . ':' . $e->getLine());
+    $logger->error(sprintf('Shutting down Worker %s right now', $uuid->toString()));
+    EventLoop::delay(0.1, fn () => exit(1));
+}

@@ -17,6 +17,7 @@ use IMEdge\Node\Rpc\Routing\Node;
 use IMEdge\Node\Rpc\Routing\NodeRouter;
 use IMEdge\Node\Rpc\RpcConnections;
 use IMEdge\Node\UtilityClasses\DirectoryBasedComponent;
+use IMEdge\Node\Worker\WorkerInstances;
 use IMEdge\RedisRunner\RedisRunner;
 use IMEdge\SimpleDaemon\DaemonComponent;
 use IMEdge\SimpleDaemon\Process;
@@ -56,6 +57,7 @@ class NodeRunner implements DaemonComponent
     public NodeRouter $nodeRouter;
     public readonly ApiRunner $controlApi;
     protected ControlConnections $controlSocket;
+    public readonly WorkerInstances $workerInstances;
 
     protected function construct(): void
     {
@@ -86,6 +88,7 @@ class NodeRunner implements DaemonComponent
             $this->newComponents['internalMetrics'] = $internalMetrics;
         });
         $this->nodeRouter = new NodeRouter(new Node($this->identifier->uuid, $this->identifier->name), $this->logger);
+        $this->workerInstances = new WorkerInstances($this->logger);
         $this->features = Features::initialize($this, $this->logger);
         $this->rpcConnections = new RpcConnections($this, $this->features, $this->logger);
         EventLoop::queue($this->launchRedis(...));

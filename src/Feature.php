@@ -11,6 +11,7 @@ use IMEdge\Log\PrefixLogger;
 use IMEdge\Node\FeatureRegistration\RpcRegistrationSubscriberInterface;
 use IMEdge\Node\Network\ConnectionSubscriberInterface;
 use IMEdge\Node\Rpc\Routing\Node;
+use IMEdge\Node\Worker\WorkerInstances;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -46,6 +47,7 @@ final class Feature
         protected readonly string $configFile,
         public readonly NodeIdentifier $nodeIdentifier,
         public readonly Services $services,
+        public readonly WorkerInstances $workerInstances, // TODO: one per feature?
         protected readonly Events $events, // TODO: remove?
         LoggerInterface $logger,
     ) {

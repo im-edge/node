@@ -8,6 +8,7 @@ use IMEdge\Inventory\NodeIdentifier;
 use IMEdge\Node\Rpc\Routing\Node;
 use IMEdge\Node\Rpc\Routing\NodeRouter;
 use IMEdge\Node\Rpc\RpcPeerType;
+use IMEdge\Node\Worker\WorkerInstances;
 use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
 use Revolt\EventLoop;
@@ -26,6 +27,7 @@ class Features
         protected readonly NodeRouter $nodeRouter,
         protected readonly Services $services,
         protected readonly Events $events,
+        protected readonly WorkerInstances $workerInstances,
         protected string $baseDirectory,
         protected readonly LoggerInterface $logger
     ) {
@@ -40,6 +42,7 @@ class Features
             $node->nodeRouter,
             $node->services,
             $node->events,
+            $node->workerInstances,
             $node->getConfigDir(),
             $logger
         );
@@ -116,6 +119,7 @@ class Features
             $this->baseDirectory . "/feature/$name.json",
             $this->nodeIdentifier,
             $this->services,
+            $this->workerInstances,
             $this->events,
             $this->logger
         );
