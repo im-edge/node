@@ -6,6 +6,7 @@ use GetOpt\GetOpt;
 use GetOpt\Option;
 use IMEdge\Log\ProcessLogger;
 use IMEdge\Node\Application;
+use IMEdge\Node\ApplicationContext;
 use IMEdge\Node\Command\CertificateCommand;
 use IMEdge\Node\Command\ConnectCommand;
 use IMEdge\Node\Command\CsrCommand;
@@ -21,8 +22,10 @@ use IMEdge\SimpleDaemon\Process;
 use Psr\Log\LoggerAwareInterface;
 use Revolt\EventLoop;
 
-require_once dirname(__DIR__) . '/vendor/autoload.php';
 error_reporting(E_ALL | E_STRICT);
+
+require_once dirname(__DIR__) . '/vendor/autoload.php';
+ApplicationContext::initializeFeatureAutoloaders();
 
 Process::setTitle(Application::PROCESS_NAME);
 Cli::clearProxySettings();

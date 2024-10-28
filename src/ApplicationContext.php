@@ -92,4 +92,15 @@ class ApplicationContext
     {
         return self::getConfigDirectory() . '/features-enabled';
     }
+
+    public static function initializeFeatureAutoloaders(): void
+    {
+        $settings = self::requireSettings();
+        foreach (self::listEnabledModulesWithDirectory() as $moduleName => $moduleDirectory) {
+            $autoloadFile = "$moduleDirectory/vendor/autoload.php";
+            if (file_exists($autoloadFile)) {
+                require_once $autoloadFile;
+            }
+        }
+    }
 }

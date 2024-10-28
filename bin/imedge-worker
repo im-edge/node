@@ -26,6 +26,7 @@ use Revolt\EventLoop;
 require_once dirname(__DIR__) . '/vendor/autoload.php';
 error_reporting(E_ALL | E_STRICT);
 
+ApplicationContext::initializeFeatureAutoloaders();
 $options = new GetOpt(null, [GetOpt::SETTING_STRICT_OPERANDS => true]);
 $options->addOptions([
     Option::create('v', 'verbose')->setDescription('Enable verbose logging'),
@@ -73,12 +74,6 @@ try {
 
 try {
     $settings = ApplicationContext::requireSettings();
-    foreach (ApplicationContext::listEnabledModulesWithDirectory() as $moduleName => $moduleDirectory) {
-        $autoloadFile = "$moduleDirectory/vendor/autoload.php";
-        if (file_exists($autoloadFile)) {
-            require_once $autoloadFile;
-        }
-    }
     LogHelper::catchStdOut($logger);
     $workerApi = new WorkerApi(
         $uuid,
