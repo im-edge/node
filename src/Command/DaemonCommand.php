@@ -6,6 +6,7 @@ use GetOpt\Command;
 use GetOpt\GetOpt;
 use IMEdge\Log\ProcessLogger;
 use IMEdge\Node\Application;
+use IMEdge\Node\ApplicationContext;
 use IMEdge\Node\NodeRunner;
 use IMEdge\SimpleDaemon\SimpleDaemon;
 
@@ -21,7 +22,7 @@ class DaemonCommand extends Command
     public function handle(GetOpt $options): void
     {
         // $home = $options->getOperand('directory');
-        $home ??= $_ENV['HOME'] ?? $_SERVER['HOME'];
+        $home ??= ApplicationContext::getHomeDirectory();
         if ($home === null) {
             echo "Got no --directory and could not detect \$HOME\n";
             exit(1);
