@@ -43,7 +43,7 @@
     "imedge/log": "^0.7.1",
     "imedge/metrics": "^0.4",
     "imedge/process-runner": "^0.3",
-    "imedge/protocol-netstring": "^0.3",
+    "imedge/protocol-netstring": "^0.4",
     "imedge/protocol-ntp": "^0.1",
     "imedge/redis-runner": "^0.2",
     "imedge/redis-tables": "^0.8",
