@@ -196,7 +196,11 @@ class RpcConnections
     {
         $remoteAddress = $socket->getRemoteAddress();
         $peerType = RpcPeerType::ANONYMOUS;
-        $this->logger->debug("Got a new connection from $remoteAddress");
+        if ($direction === ConnectionDirection::INCOMING) {
+            $this->logger->debug("Got a new connection from $remoteAddress");
+        } else {
+            $this->logger->debug("A new connetion to $remoteAddress has been established");
+        }
 
         try {
             $socket->setupTls();
