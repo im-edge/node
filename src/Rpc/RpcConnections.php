@@ -98,7 +98,7 @@ class RpcConnections
                 try {
                     $this->connect($peerAddress); // TODO: from configuration
                 } catch (Exception $e) {
-                    $this->logger->notice("Peer connection failed (where it shouldn't): " . $e->getMessage());
+                    $this->logger->error("Peer connection failed: " . $e->getMessage());
                 }
             });
         }
