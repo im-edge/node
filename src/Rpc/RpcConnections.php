@@ -16,6 +16,7 @@ use Amp\Socket\ServerTlsContext;
 use Amp\Socket\Socket;
 use Amp\Socket\SocketException;
 use Amp\Socket\TlsException;
+use DateTimeImmutable;
 use Exception;
 use IMEdge\Async\Retry;
 use IMEdge\CertificateStore\CertificateHelper;
@@ -454,14 +455,15 @@ class RpcConnections
 
     protected function prepareClientContext(?string $fingerprint = null): ConnectContext
     {
-        $certificate = $this->getMyConnectionCertificate();
-        if (Certificate::fromPEM(PEM::fromFile($certificate->getCertFile()))->isSelfIssued()) {
+        $ampCertificate = $this->getMyConnectionCertificate();
+        $certificate = Certificate::fromPEM(PEM::fromFile($ampCertificate->getCertFile()));
+        if ($certificate->isSelfIssued()) {
             throw new Exception('Cannot connect with a self-signed certificate');
         }
         $tlsContext = (new ClientTlsContext())
             ->withCaPath($this->trustStore->getCaPath())
             ->withPeerCapturing()
-            ->withCertificate($certificate)
+            ->withCertificate($ampCertificate)
             ->withoutPeerNameVerification()
         ;
 
@@ -494,6 +496,21 @@ class RpcConnections
         $ssl = $this->sslStore;
         $certName = $this->certName;
         if (! $ssl->hasCertificate($certName)) {
+            $private = KeyGenerator::generate();
+            $certificate = CertificateHelper::createTemporarySelfSigned($certName, $private);
+            $ssl->store($certificate, $private);
+        }
+
+        $certificate = Certificate::fromPEM(PEM::fromFile($ssl->getCertificatePath($certName)));
+        $now = new DateTimeImmutable();
+        if ($certificate->tbsCertificate()->validity()->notAfter()->dateTime() < $now) {
+            $this->logger->warning('Dropping my certificate, it has expired at ' . $now->format('Y-m-d H:i:s'));
+            $private = KeyGenerator::generate();
+            $certificate = CertificateHelper::createTemporarySelfSigned($certName, $private);
+            $ssl->store($certificate, $private);
+        }
+        if ($certificate->tbsCertificate()->validity()->notBefore()->dateTime() > $now) {
+            $this->logger->warning('Dropping my certificate, it is not valid before ' . $now->format('Y-m-d H:i:s'));
             $private = KeyGenerator::generate();
             $certificate = CertificateHelper::createTemporarySelfSigned($certName, $private);
             $ssl->store($certificate, $private);
