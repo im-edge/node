@@ -26,7 +26,7 @@ use Sop\X509\Certificate\Certificate;
 #[ApiNamespace('node')]
 class NodeApi
 {
-    protected RedisClient $redis;
+    protected ?RedisClient $redis = null;
 
     public function __construct(
         protected NodeRunner $node,
@@ -83,6 +83,9 @@ class NodeApi
     #[ApiMethod]
     public function streamDbChanges(string $position): ?array
     {
+        if ($this->redis === null) {
+            return [];
+        }
         $blockMs = 15000;
         $blockMs = 1;
         $maxCount = 10000;
@@ -104,6 +107,9 @@ class NodeApi
     #[ApiMethod]
     public function getDbStream(string $formerPos = '+'): array
     {
+        if ($this->redis === null) {
+            return [];
+        }
         $stream = RedisTables::STREAM_NAME_PREFIX . $this->node->getUuid()->toString();
 // TODO: pos - 1
         $result = [];
