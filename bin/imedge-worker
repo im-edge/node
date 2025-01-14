@@ -23,10 +23,18 @@ use IMEdge\SimpleDaemon\SimpleDaemon;
 use Ramsey\Uuid\Uuid;
 use Revolt\EventLoop;
 
-require_once dirname(__DIR__) . '/vendor/autoload.php';
 error_reporting(E_ALL | E_STRICT);
 
+if ($envValue = getenv('IMEDGE_LIB_DIR')) {
+    define('IMEDGE_LIB_DIR', $envValue);
+} elseif (file_exists(dirname(__DIR__) . '/vendor/autoload.php')) {
+    define('IMEDGE_LIB_DIR', dirname(__DIR__));
+} else {
+    define('IMEDGE_LIB_DIR', '/usr/share/imedge-node');
+}
+require_once IMEDGE_LIB_DIR . '/vendor/autoload.php';
 ApplicationContext::initializeFeatureAutoloaders();
+
 $options = new GetOpt(null, [GetOpt::SETTING_STRICT_OPERANDS => true]);
 $options->addOptions([
     Option::create('v', 'verbose')->setDescription('Enable verbose logging'),

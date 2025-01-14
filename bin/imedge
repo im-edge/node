@@ -24,7 +24,14 @@ use Revolt\EventLoop;
 
 error_reporting(E_ALL | E_STRICT);
 
-require_once dirname(__DIR__) . '/vendor/autoload.php';
+if ($envValue = getenv('IMEDGE_LIB_DIR')) {
+    define('IMEDGE_LIB_DIR', $envValue);
+} elseif (file_exists(dirname(__DIR__) . '/vendor/autoload.php')) {
+    define('IMEDGE_LIB_DIR', dirname(__DIR__));
+} else {
+    define('IMEDGE_LIB_DIR', '/usr/share/imedge-node');
+}
+require_once IMEDGE_LIB_DIR . '/vendor/autoload.php';
 ApplicationContext::initializeFeatureAutoloaders();
 
 Process::setTitle(Application::PROCESS_NAME);
