@@ -1,6 +1,5 @@
 %define revision 1
-%define git_version %( git describe | cut -c2- | tr -s '-' '+')
-%define short_version %( git describe --long | cut -c2- | cut -d '-' -f 1 )
+%define git_version %( git describe --tags )
 %define git_hash %( git rev-parse --short HEAD )
 %define daemon_user imedge
 %define daemon_group imedge
