@@ -186,7 +186,7 @@ trait DirectoryBasedComponent
         return self::SUPPORTED_CONFIG_VERSIONS;
     }
 
-    protected function supportsConfigVersion(string $version): string
+    protected function supportsConfigVersion(string $version): bool
     {
         return in_array($version, $this->getSupportedConfigVersions(), true);
     }
