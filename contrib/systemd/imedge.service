@@ -1,0 +1,23 @@
+[Unit]
+Description=IMEdge node
+Documentation=https://github.com/im-edge
+Wants=network.target
+
+[Service]
+EnvironmentFile=-/etc/default/imedge
+EnvironmentFile=-/etc/sysconfig/imedge
+ExecStart=/usr/bin/imedge daemon
+; ExecStart=/usr/bin/imedge daemon --debug
+; ExecStart=/usr/bin/imedge-start-wrapper.sh -> neteye
+ExecReload=/bin/kill -HUP ${MAINPID}
+User=imedge
+SyslogIdentifier=imedge
+Type=notify
+
+NotifyAccess=all
+WatchdogSec=30
+RestartSec=30
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
