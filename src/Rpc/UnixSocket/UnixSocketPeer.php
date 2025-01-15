@@ -7,7 +7,7 @@ use stdClass;
 
 class UnixSocketPeer implements JsonSerialization
 {
-    public function __construct(
+    final public function __construct(
         public readonly int $pid,
         public readonly int $uid,
         public readonly int $gid,
