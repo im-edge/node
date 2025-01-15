@@ -38,7 +38,7 @@ jobs:
       - name: Build Package
         id: build-package
         run: |
-          rpmbuild -bb imedge-node.spec
+          rpmbuild -bb imedge-node_release.spec
           echo "rpm_file="$(find $HOME/rpmbuild/RPMS/ -type f -name '*.rpm') >> "$GITHUB_OUTPUT"
           echo "rpm_filename="$(find $HOME/rpmbuild/RPMS/ -type f -name '*.rpm' -exec basename {} \;) >> "$GITHUB_OUTPUT"
 
