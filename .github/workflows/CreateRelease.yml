@@ -1,4 +1,4 @@
-name: RPM Packages
+name: Create Release
 
 on:
   push:
@@ -9,11 +9,6 @@ jobs:
   create-release:
     name: Create a release
     runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-      packages: write
-      attestations: write
-      id-token: write
     steps:
       - name: Create Release
         id: create_release
