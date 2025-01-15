@@ -15,18 +15,12 @@ class DaemonCommand extends Command
     public function __construct()
     {
         parent::__construct('daemon', [$this, 'handle']);
-        // $this->addOperand(Operand::create('directory')->setDescription('Directory, defaults to $HOME'));
         $this->setDescription(sprintf('Run the %s daemon', Application::PROCESS_NAME));
     }
 
     public function handle(GetOpt $options): void
     {
-        // $home = $options->getOperand('directory');
-        $home ??= ApplicationContext::getHomeDirectory();
-        if ($home === null) {
-            echo "Got no --directory and could not detect \$HOME\n";
-            exit(1);
-        }
+        $home = ApplicationContext::getHomeDirectory();
         $logger = ProcessLogger::create(Application::LOG_NAME, $options);
         Application::checkRequirements($logger);
 

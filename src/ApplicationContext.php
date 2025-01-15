@@ -29,7 +29,7 @@ class ApplicationContext
 
     public static function getHomeDirectory(): string
     {
-        return self::$homeDirectory ??= $_ENV['HOME'] ?? $_SERVER['HOME'];
+        return self::$homeDirectory ??= getenv('HOME');
     }
 
     public static function getConfigDirectory(): string

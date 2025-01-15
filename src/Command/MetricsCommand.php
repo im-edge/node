@@ -10,6 +10,7 @@ use IMEdge\InfluxDbStreamer\InfluxDb\InfluxDbWriterV1;
 use IMEdge\InfluxDbStreamer\InfluxDbStreamer;
 use IMEdge\Log\ProcessLogger;
 use IMEdge\Node\Application;
+use IMEdge\Node\ApplicationContext;
 use IMEdge\SimpleDaemon\Process;
 use Revolt\EventLoop;
 
@@ -36,12 +37,7 @@ class MetricsCommand extends Command
     public function handle(GetOpt $options): void
     {
         Process::setTitle(Application::PROCESS_NAME . '-MetricShipper');
-        // $home = $options->getOperand('directory');
-        $home ??= $_ENV['HOME'] ?? $_SERVER['HOME'];
-        if ($home === null) {
-            echo "Got no --directory and could not detect \$HOME\n";
-            exit(1);
-        }
+        $home = ApplicationContext::getHomeDirectory();
         $baseUrl = $options->getOption('baseUrl');
         if ($baseUrl === null) {
             throw new Missing("Option 'baseUrl' is required");
