@@ -39,10 +39,10 @@ feature packages:
 ```shell
 dnf -y install \
   https://github.com/im-edge/node/releases/download/v0.9.10/imedge-node-0.9.10-1.noarch.rpm \
-  https://github.com/im-edge/metrics-feature/releases/download/v0.15.0/imedge-metrics-feature-0.15.0-1.noarch.rpm \
-  https://github.com/im-edge/snmp-feature/releases/download/v0.9.0/imedge-snmp-feature-0.9.0-1.noarch.rpm \
-  https://github.com/im-edge/tcp-feature/releases/download/v0.5.0/imedge-tcp-feature-0.5.0-1.noarch.rpm \
-  https://github.com/im-edge/inventory-feature/releases/download/v0.11.0/imedge-inventory-feature-0.11.0-1.noarch.rpm
+  https://github.com/im-edge/inventory-feature/releases/download/v0.12.1/imedge-feature-inventory-0.12.1-1.noarch.rpm \
+  https://github.com/im-edge/metrics-feature/releases/download/v0.17.0/imedge-feature-metrics-0.17.0-1.noarch.rpm \
+  https://github.com/im-edge/snmp-feature/releases/download/v0.10.0/imedge-feature-snmp-0.10.0-1.noarch.rpm \
+  https://github.com/im-edge/tcp-feature/releases/download/v0.6.0/imedge-feature-tcp-0.6.0-1.noarch.rpm
 ```
 
 Your IMEdge Node is now ready to go, and can be started:
