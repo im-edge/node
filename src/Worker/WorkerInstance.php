@@ -25,11 +25,10 @@ class WorkerInstance
     public function __construct(
         public readonly string $name,
         public readonly UuidInterface $uuid,
-        protected LoggerInterface $logger)
-    {
+        protected LoggerInterface $logger
+    ) {
         $this->handler = new ApiRunner($this->uuid->toString());
         $this->handler->addApi(new LogApi($this->logger, "[$name (worker)] "));
-
     }
 
     public function run(string $workerClassName, ?Settings $settings): void

@@ -79,7 +79,7 @@ class ApplicationContext
     public static function loadSettings(): ?Settings
     {
         $filename = self::getConfigFile();
-        if (file_exists($filename) && is_readable($filename)){
+        if (file_exists($filename) && is_readable($filename)) {
             return Settings::fromSerialization(JsonString::decode(
                 file_get_contents($filename)
             ));

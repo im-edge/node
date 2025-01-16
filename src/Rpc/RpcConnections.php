@@ -334,8 +334,7 @@ class RpcConnections
         JsonRpcConnection $connection,
         string $peerIdentifier,
         RpcPeerType $peerType
-    ): void
-    {
+    ): void {
         foreach ($this->features->getLoaded() as $feature) {
             $this->tellFeatureAboutConnection($feature, $connection, $peerIdentifier, $peerType);
         }
@@ -357,8 +356,7 @@ class RpcConnections
 
     protected function tellFeaturesAboutLostConnection(
         string $peerIdentifier
-    ): void
-    {
+    ): void {
         foreach ($this->features->getLoaded() as $feature) {
             $this->tellFeatureAboutLostConnection($feature, $peerIdentifier);
         }
@@ -398,7 +396,10 @@ class RpcConnections
         $socket->onClose(function () use ($peerAddress, $fingerprint) {
             if (isset($this->configured[$peerAddress])) {
                 $this->logger->notice("Reconnecting to $peerAddress in 5s");
-                Retry::forever(fn () => $this->connect($peerAddress, $fingerprint), "Reconnecting to $peerAddress", 30, 5, 30, $this->logger);
+                Retry::forever(fn () => $this->connect(
+                    $peerAddress,
+                    $fingerprint
+                ), "Reconnecting to $peerAddress", 30, 5, 30, $this->logger);
             }
         });
 
