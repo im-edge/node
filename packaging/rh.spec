@@ -1,13 +1,13 @@
 %define revision 1
-%define git_version %( git describe --tags )
+%define git_version %( git describe --tags | cut -c2- | tr -s '-' '+')
 %define git_hash %( git rev-parse --short HEAD )
 %define daemon_user imedge
 %define daemon_group imedge
 %define daemon_home /var/lib/%{daemon_user}
 %define basedir         %{_datadir}/%{name}
 %define bindir          %{_bindir}
-%undefine __brp_mangle_shebangs
 %define socket_path /run/imedge
+%undefine __brp_mangle_shebangs
 
 Name:           imedge-node
 Version:        %{git_version}
@@ -35,9 +35,7 @@ mkdir -p %{buildroot}%{bindir}
 mkdir -p %{buildroot}%{basedir}
 mkdir -p %{buildroot}/lib/systemd/system
 mkdir -p %{buildroot}/lib/tmpfiles.d
-pwd
 cd - # ???
-pwd
 cp -p bin/imedge %{buildroot}%{bindir}/
 cp -p bin/imedge-worker %{buildroot}%{bindir}/
 cp -pr contrib/systemd/imedge.service %{buildroot}/lib/systemd/system/
@@ -59,8 +57,7 @@ rm -rf %{buildroot}
 
 %files
 %defattr(-,root,root)
-%{basedir}/src
-%{basedir}/vendor
+%{basedir}
 %{bindir}/imedge
 %{bindir}/imedge-worker
 /lib/systemd/system/imedge.service

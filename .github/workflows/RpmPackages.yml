@@ -14,11 +14,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install PHP
-        run: sudo apt-get -qy install php-cli php-curl php-mysql php-redis php-mbstring php-ctype php-gmp php-iconv php-intl php-json php-posix php-simplexml php-sockets php-zip composer
-
       - name: Install Build Tools
-        run: sudo apt-get -y install binutils file rpm
+        run: sudo apt-get -y install binutils file rpm composer
 
       - name: Install Dependencies with Composer
         run: composer install --ignore-platform-req=php+ --no-dev
@@ -26,7 +23,7 @@ jobs:
       - name: Build Package
         id: build-package
         run: |
-          rpmbuild -bb imedge-node.spec
+          rpmbuild -bb packaging/rh.spec
           echo "rpm_file="$(find $HOME/rpmbuild/RPMS/ -type f -name '*.rpm') >> "$GITHUB_OUTPUT"
           echo "rpm_filename="$(find $HOME/rpmbuild/RPMS/ -type f -name '*.rpm' -exec basename {} \;) >> "$GITHUB_OUTPUT"
 
