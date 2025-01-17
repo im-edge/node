@@ -97,10 +97,9 @@ class WorkerApi implements EventEmitterInterface, DaemonComponent
             $futures[] = async($instance->stop(...));
         }
         try {
-            foreach (awaitAll($futures) as [$errors, $results]) {
-                foreach ($errors as $e) {
-                    $this->logger->error('Error on stopping worker instance: ' . $e->getMessage());
-                }
+            [$errors, $results] = awaitAll($futures);
+            foreach ($errors as $e) {
+                $this->logger->error('Error on stopping worker instance: ' . $e->getMessage());
             }
         } catch (Throwable $e) {
             $this->logger->error('Failed to stop worker instance: ' . $e->getMessage());
