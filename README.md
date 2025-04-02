@@ -8,51 +8,38 @@ closer to the data source.
 Installation
 ------------
 
-### CentOS 9
+### Preparation on RHEL/CentOS/Alma/Rocky (8 and 9)
 
-PHP on CentOS 9 is outdated, therefore we're going to install a recent PHP
-version via REMI:
-
-```shell
-# Install the REMI repositoriy...
-dnf -y install https://rpms.remirepo.net/enterprise/remi-release-9.rpm
-# ...and disable it by default:
-dnf config-manager --set-disabled remi-modular --set-disabled remi-safe
-# Install related dependencies
-dnf -y install rrdtool redis openssl-perl php83 php83-php-pecl-event \
-  php83-php-pecl-ev php83-php-gmp php83-php-intl php83-php-ldap \
-  php83-php-mysqlnd php83-php-mbstring php83-php-pdo php83-php-sodium \
-  php83-php-xml php83-php-soap php83-php-phpiredis php83-php-process \
-  php83-php-pecl-zip --enablerepo=remi-safe,remi-modular
-# Add the REMI php binary path to the IMEdge node daemons path:
-echo PATH="/opt/remi/php83/root/usr/bin:/opt/remi/php83/root/usr/sbin:$PATH" \
-  > /etc/default/imedge
-```
-
-### CentOS 8
-
-PHP on CentOS 8 is outdated, therefore we're going to install a recent PHP
-version via REMI:
-
-```shell
-# Install the REMI repositoriy...
-dnf -y install https://rpms.remirepo.net/enterprise/remi-release-8.rpm
-# ...and disable it by default:
-dnf config-manager --set-disabled remi-modular --set-disabled remi-safe
-# Install related dependencies
-dnf -y install rrdtool redis openssl-perl php83 php83-php-pecl-event \
-  php83-php-pecl-ev php83-php-gmp php83-php-intl php83-php-ldap \
-  php83-php-mysqlnd php83-php-mbstring php83-php-pdo php83-php-sodium \
-  php83-php-xml php83-php-soap php83-php-phpiredis php83-php-process \
-  php83-php-pecl-zip --enablerepo=remi-safe,remi-modular
-# Add the REMI php binary path to the IMEdge node daemons path:
-echo PATH="/opt/remi/php83/root/usr/bin:/opt/remi/php83/root/usr/sbin:$PATH" \
-  > /etc/default/imedge
-```
+PHP is outdated on RHEL/CentOS/Others v8 and v9, therefore we're going to
+install a recent PHP version via REMI. We'll disable the repository by
+default
 
 Please note that this is not touching your default PHP installation, if any.
 The IMEdge Node package has no hard dependency on a specific PHP version, but
 assumes a recent version (>= 8.1) being installed and available.
+
+#### Install REMI repository on RHEL/CentOS/Alma/Rocky 8
+```shell
+dnf -y install https://rpms.remirepo.net/enterprise/remi-release-8.rpm
+```
+
+#### Install REMI repository on RHEL/CentOS/Alma/Rocky 9
+```shell
+dnf -y install https://rpms.remirepo.net/enterprise/remi-release-9.rpm
+```
+
+#### Disable the REMI repository by default
+```shell
+dnf config-manager --set-disabled remi-modular --set-disabled remi-safe
+```
+
+#### Add REMI path to IMEdge node daemons path
+```shell
+echo PATH="/opt/remi/php83/root/usr/bin:/opt/remi/php83/root/usr/sbin:$PATH" \
+  > /etc/default/imedge
+```
+
+### Install IMEdge node on RHEL/CentOS/Alma/Rocky (8 and 9)
 
 Now we're ready to install the latest IMEdge node package and a bunch of related
 feature packages:
