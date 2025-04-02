@@ -19,7 +19,7 @@ use function Amp\ByteStream\pipe;
 class WorkerInstance
 {
     protected AmpProcess $process;
-    protected JsonRpcConnection $jsonRpc;
+    public JsonRpcConnection $jsonRpc;
     protected ApiRunner $handler;
 
     public function __construct(
