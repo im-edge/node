@@ -35,6 +35,7 @@ class WorkerInstances
         return $worker;
     }
 
+    #[ApiMethod]
     public function listWorkers(): array
     {
         return $this->workerNames;
