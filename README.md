@@ -59,10 +59,10 @@ feature packages:
 
 ```shell
 dnf -y install \
-  https://github.com/im-edge/node/releases/download/v0.10.0/imedge-node-0.10.0-1.noarch.rpm \
-  https://github.com/im-edge/inventory-feature/releases/download/v0.13.0/imedge-feature-inventory-0.13.0-1.noarch.rpm \
-  https://github.com/im-edge/metrics-feature/releases/download/v0.18.0/imedge-feature-metrics-0.18.0-1.noarch.rpm \
-  https://github.com/im-edge/snmp-feature/releases/download/v0.11.0/imedge-feature-snmp-0.11.0-1.noarch.rpm \
+  https://github.com/im-edge/node/releases/download/v0.11.0/imedge-node-0.11.0-1.noarch.rpm \
+  https://github.com/im-edge/inventory-feature/releases/download/v0.14.0/imedge-feature-inventory-0.14.0-1.noarch.rpm \
+  https://github.com/im-edge/metrics-feature/releases/download/v0.19.0/imedge-feature-metrics-0.19.0-1.noarch.rpm \
+  https://github.com/im-edge/snmp-feature/releases/download/v0.12.0/imedge-feature-snmp-0.12.0-1.noarch.rpm \
   https://github.com/im-edge/tcp-feature/releases/download/v0.7.0/imedge-feature-tcp-0.7.0-1.noarch.rpm
 ```
 
