@@ -15,4 +15,5 @@ interface ImedgeWorker
     );
     public function start(): void;
     public function stop(): void;
+    public function getApiInstances(): array;
 }
