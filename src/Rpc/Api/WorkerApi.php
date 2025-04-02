@@ -8,6 +8,7 @@ use IMEdge\Config\Settings;
 use IMEdge\Inventory\NodeIdentifier;
 use IMEdge\Node\Application;
 use IMEdge\Node\ImedgeWorker;
+use IMEdge\Node\Rpc\ApiRunner;
 use IMEdge\RpcApi\ApiMethod;
 use IMEdge\RpcApi\ApiNamespace;
 use IMEdge\SimpleDaemon\DaemonComponent;
@@ -33,7 +34,8 @@ class WorkerApi implements EventEmitterInterface, DaemonComponent
     public function __construct(
         protected UuidInterface $uuid,
         protected NodeIdentifier $nodeIdentifier,
-        protected LoggerInterface $logger
+        protected LoggerInterface $logger,
+        protected ApiRunner $apiRunner,
     ) {
     }
 
@@ -68,6 +70,9 @@ class WorkerApi implements EventEmitterInterface, DaemonComponent
         $instance = new $className($settings ?? new Settings(), $this->nodeIdentifier, $this->logger);
         try {
             $instance->start();
+            foreach ($instance->getApiInstances() as $api) {
+                $this->apiRunner->addApi($api);
+            }
         } catch (Throwable $e) {
             $this->emit(self::ON_ERROR, [$e]);
             return false;
