@@ -19,7 +19,9 @@ use Amp\Socket\TlsException;
 use DateTimeImmutable;
 use Exception;
 use IMEdge\Async\Retry;
+use IMEdge\CertificateStore\CaStore\CaStoreDirectory;
 use IMEdge\CertificateStore\CertificateHelper;
+use IMEdge\CertificateStore\CertificationAuthority;
 use IMEdge\CertificateStore\ClientStore\ClientSslStoreDirectory;
 use IMEdge\CertificateStore\ClientStore\ClientSslStoreInterface;
 use IMEdge\CertificateStore\Generator\KeyGenerator;
@@ -32,6 +34,7 @@ use IMEdge\Node\Features;
 use IMEdge\Node\Network\ConnectionInformation;
 use IMEdge\Node\Network\ConnectionState;
 use IMEdge\Node\NodeRunner;
+use IMEdge\Node\Rpc\Api\CaApi;
 use IMEdge\Node\Rpc\Api\NodeApi;
 use IMEdge\Node\Rpc\Routing\Node;
 use IMEdge\Protocol\NetString\NetStringConnection;
@@ -175,6 +178,17 @@ class RpcConnections
         }
     }
 
+    /**
+     * TODO: Duplicated Code from CaApi
+     */
+    protected function ca(): CertificationAuthority
+    {
+        return $this->ca ??= new CertificationAuthority(
+            CaApi::DEFAULT_CA_NAME,
+            new CaStoreDirectory($this->node->getConfigDir() . '/' . CaApi::DEFAULT_CA_DIR)
+        );
+    }
+
     public function stopListener(string $address): bool
     {
         if (isset($this->listeners[$address])) {
@@ -266,7 +280,15 @@ class RpcConnections
 
         foreach ($this->features->getLoaded() as $feature) {
             foreach ($feature->getRegisteredRpcApis() as $featureApi) {
-                $handler->addApi($featureApi);
+                try {
+                    $handler->addApi($featureApi);
+                } catch (\Throwable $e) {
+                    $this->logger->error(sprintf(
+                        'Failed to register API for feature %s: %s',
+                        $feature->name,
+                        $e->getMessage()
+                    ));
+                }
             }
         }
         // What about $this->requestHandler?
@@ -395,6 +417,7 @@ class RpcConnections
         );
         $socket->onClose(function () use ($peerAddress, $fingerprint) {
             if (isset($this->configured[$peerAddress])) {
+                // TODO: Add to pending
                 $this->logger->notice("Reconnecting to $peerAddress in 5s");
                 Retry::forever(fn () => $this->connect(
                     $peerAddress,
@@ -440,16 +463,27 @@ class RpcConnections
     {
         $certificate = $this->getMyConnectionCertificate();
         if (Certificate::fromPEM(PEM::fromFile($certificate->getCertFile()))->isSelfIssued()) {
-            throw new Exception('Cannot listen with a self-signed certificate');
-        }
+            $cert = Certificate::fromPEM(PEM::fromFile($certificate->getCertFile()));
+            $fingerprint = implode(':', str_split(strtoupper(sha1($cert->toDER())), 2));
+            $this->logger->notice('Listening with a self-signed certificate. Fingerprint: ' . $fingerprint);
+            // throw new Exception('Cannot listen with a self-signed certificate');
 
-        $tlsContext = (new ServerTlsContext())
-            ->withCaPath($this->trustStore->getCaPath())
-            ->withPeerCapturing()
-            ->withDefaultCertificate($certificate)
-            ->withPeerVerification()
-            ->withoutPeerNameVerification()
+            $tlsContext = (new ServerTlsContext())
+                ->withCaPath($this->trustStore->getCaPath())
+                ->withoutPeerCapturing()
+                ->withDefaultCertificate($certificate)
+                ->withoutPeerVerification()
+                ->withoutPeerNameVerification()
             ;
+        } else {
+            $tlsContext = (new ServerTlsContext())
+                ->withCaPath($this->trustStore->getCaPath())
+                ->withPeerCapturing()
+                ->withDefaultCertificate($certificate)
+                ->withPeerVerification()
+                ->withoutPeerNameVerification()
+            ;
+        }
 
         return (new BindContext())->withTlsContext($tlsContext);
     }
@@ -458,8 +492,24 @@ class RpcConnections
     {
         $ampCertificate = $this->getMyConnectionCertificate();
         $certificate = Certificate::fromPEM(PEM::fromFile($ampCertificate->getCertFile()));
+
         if ($certificate->isSelfIssued()) {
-            throw new Exception('Cannot connect with a self-signed certificate');
+            $certName = $this->certName;
+            $ca = $this->ca();
+            $caCert = $ca->getCertificate();
+
+            if (
+                !$this->trustStore->hasCaCertificate(
+                    CertificateHelper::getSubjectName($caCert),
+                    CertificateHelper::fingerprint($caCert)
+                )
+            ) {
+                $this->logger->notice('Adding my own CA certificate to my truststore');
+                $this->trustStore->addCaCertificate($ca->getCertificate());
+            }
+            $this->logger->notice('Signing my own certificate');
+            $signed = $ca->sign(CertificateHelper::generateCsr($certName, $this->sslStore->readPrivateKey($certName)));
+            $this->sslStore->store($signed, $this->sslStore->readPrivateKey($certName));
         }
         $tlsContext = (new ClientTlsContext())
             ->withCaPath($this->trustStore->getCaPath())

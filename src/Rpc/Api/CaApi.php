@@ -17,8 +17,8 @@ use Sop\X509\CertificationRequest\CertificationRequest;
 class CaApi
 {
     // Alternative: Application::PROCESS_NAME . '::CA'
-    protected const DEFAULT_CA_NAME = 'IMEdge CA';
-    protected const DEFAULT_CA_DIR = 'CA';
+    public const DEFAULT_CA_NAME = 'IMEdge CA';
+    public const DEFAULT_CA_DIR = 'CA';
 
     public function __construct(
         protected NodeRunner $node,
