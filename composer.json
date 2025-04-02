@@ -14,11 +14,6 @@
       "IMEdge\\Node\\": "src"
     }
   },
-  "scripts": {
-    "post-update-cmd": [
-      "packaging/bin/apply-patches.sh"
-    ]
-  },
   "require": {
     "php": ">=8.1",
     "ext-ctype": "*",
@@ -37,6 +32,7 @@
     "amphp/sql-common": "^2.0",
     "evenement/evenement": "^3.0",
     "gipfl/linux-health": "^0.2.0",
+    "imedge/amphp-socket": "^2.3.1",
     "imedge/async": ">=0.2",
     "imedge/certificate-store": "^0.1",
     "imedge/config": "^0.2",
@@ -51,7 +47,7 @@
     "imedge/metrics": "^0.5",
     "imedge/process-runner": "^0.3",
     "imedge/protocol-netstring": "^0.4",
-    "imedge/protocol-ntp": "^0.1",
+    "imedge/protocol-ntp": "^0.2",
     "imedge/redis-runner": "^0.2",
     "imedge/redis-tables": "^0.10",
     "imedge/redis-utils": "^0.2",
