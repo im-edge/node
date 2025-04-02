@@ -46,7 +46,11 @@ class WorkerInstance
     public function start(): void
     {
         $cmd = dirname(Process::getBinaryPath()) . '/imedge-worker';
-        $this->process = $process = AmpProcess::start($cmd);
+        $this->process = $process = AmpProcess::start([
+            $cmd,
+            $this->name,
+            $this->uuid->toString()
+        ]);
         $netString = new NetStringConnection($process->getStdout(), $process->getStdin());
         $this->jsonRpc = new JsonRpcConnection($netString, $netString, $this->handler, $this->logger);
         $stdErrReader = new BufferedLineReader($this->logger->error(...), "\n");

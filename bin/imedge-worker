@@ -5,6 +5,7 @@ use Amp\ByteStream\ReadableResourceStream;
 use Amp\ByteStream\WritableResourceStream;
 use GetOpt\ArgumentException;
 use GetOpt\GetOpt;
+use GetOpt\Operand;
 use GetOpt\Option;
 use IMEdge\Inventory\NodeIdentifier;
 use IMEdge\JsonRpc\JsonRpcConnection;
@@ -36,6 +37,8 @@ require_once IMEDGE_LIB_DIR . '/vendor/autoload.php';
 ApplicationContext::initializeFeatureAutoloaders();
 
 $options = new GetOpt(null, [GetOpt::SETTING_STRICT_OPERANDS => true]);
+$options->addOperand(new Operand('name', Operand::REQUIRED));
+$options->addOperand(new Operand('uuid', Operand::OPTIONAL));
 $options->addOptions([
     Option::create('v', 'verbose')->setDescription('Enable verbose logging'),
     Option::create('d', 'debug')->setDescription('Enable debug logging')
@@ -47,12 +50,19 @@ try {
     echo $options->getHelpText();
     exit(1);
 }
+$name = $options->getOperand('name');
+$uuid = $options->getOperand('uuid');
+$uuid = $uuid ? Uuid::fromString($uuid) : Uuid::uuid4();
 
-$uuid = Uuid::uuid4(); // TODO: optionally from parameter!
-$processTitle = Application::PROCESS_NAME . "::worker::" . $uuid->toString();
+$processTitle = sprintf(
+    '%s::worker::%s/%s',
+    Application::PROCESS_NAME,
+    $name,
+    $uuid->toString()
+);
 
 $featureName = $options->getOperand('feature');
-Process::setTitle(Application::PROCESS_NAME . "::worker"); // TODO: add instance?
+Process::setTitle($processTitle);
 $logger = ProcessLogger::create(Application::LOG_NAME . "/$featureName", $options);
 LogHelper::logEventloopErrors($logger, "Uncaught sub-process ($featureName) error: ");
 
@@ -90,7 +100,8 @@ try {
             $settings->getRequired('name'),
             gethostbyaddr(gethostbyname(gethostname()))
         ),
-        $logger
+        $logger,
+        $api
     );
     $workerApi->on(WorkerApi::ON_SHUTDOWN_REQUESTED, $damon->shutdown(...));
     $api->addApi($workerApi);
