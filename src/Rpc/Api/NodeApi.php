@@ -116,7 +116,7 @@ class NodeApi
         foreach ($this->redis->execute('XREVRANGE', $stream, $formerPos, '-', 'COUNT', 1000) as [$streamPos, $row]) {
             $hash = RedisResult::toHash($row);
             $hash->keyProperties = JsonString::decode($hash->keyProperties);
-            $hash->value = JsonString::decode($hash->value);
+            $hash->value = isset($hash->value) ? JsonString::decode($hash->value) : null;
             $result[$streamPos] = $hash;
         }
 
