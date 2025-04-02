@@ -5,6 +5,7 @@ namespace IMEdge\Node\Worker;
 use Amp\Process\Process as AmpProcess;
 use IMEdge\Config\Settings;
 use IMEdge\JsonRpc\JsonRpcConnection;
+use IMEdge\Node\ImedgeWorker;
 use IMEdge\Node\Rpc\Api\LogApi;
 use IMEdge\Node\Rpc\ApiRunner;
 use IMEdge\ProcessRunner\BufferedLineReader;
@@ -31,7 +32,10 @@ class WorkerInstance
         $this->handler->addApi(new LogApi($this->logger, "[$name (worker)] "));
     }
 
-    public function run(string $workerClassName, ?Settings $settings): void
+    /**
+     * @param class-string<ImedgeWorker> $workerClassName
+     */
+    public function run(string $workerClassName, ?Settings $settings = new Settings()): void
     {
         $this->jsonRpc->request('worker.launch', [
             $workerClassName,
