@@ -26,7 +26,7 @@ class SimpleClient
         $this->targetNode = $node;
     }
 
-    public function request(string $method, array|stdClass $params = null)
+    public function request(string $method, array|stdClass|null $params = null)
     {
         return $this->jsonRpc->request($method, $params, $this->getExtraProperties());
     }
