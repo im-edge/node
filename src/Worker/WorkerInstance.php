@@ -29,7 +29,7 @@ class WorkerInstance
         protected LoggerInterface $logger
     ) {
         $this->handler = new ApiRunner($this->uuid->toString());
-        $this->handler->addApi(new LogApi($this->logger, "[$name (worker)] "));
+        $this->handler->addApi(new LogApi($this->logger, "[worker:$name] "));
     }
 
     /**
