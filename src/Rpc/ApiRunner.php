@@ -2,6 +2,7 @@
 
 namespace IMEdge\Node\Rpc;
 
+use Amp\Socket\InternetAddress;
 use IMEdge\JsonRpc\Error;
 use IMEdge\JsonRpc\ErrorCode;
 use IMEdge\JsonRpc\Notification;
@@ -37,6 +38,9 @@ class ApiRunner implements RequestHandler
     ) {
         Hydrator::registerType(UuidInterface::class, static function ($value) {
             return Uuid::fromString($value);
+        });
+        Hydrator::registerType(InternetAddress::class, static function ($value) {
+            return InternetAddress::fromString($value);
         });
     }
 
