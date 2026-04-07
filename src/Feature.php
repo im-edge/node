@@ -37,6 +37,7 @@ final class Feature
     /** @var RpcRegistrationSubscriberInterface[] */
     private array $rpcRegistrationSubscribers = [];
     private array $onShutdown = [];
+    private array $onFeaturesReady = [];
     private bool $isRegistered = false;
     protected LoggerInterface $logger;
     public Settings $settings;
@@ -140,6 +141,24 @@ final class Feature
     final public function isRegistered(): bool
     {
         return $this->isRegistered;
+    }
+
+    /**
+     * @internal
+     */
+    final public function triggerFeaturesReady(Features $features): void
+    {
+        foreach ($this->onFeaturesReady as $method) {
+            $method($features);
+        }
+    }
+
+    /**
+     * @api
+     */
+    final protected function onFeaturesReady(callable $callback): void
+    {
+        $this->onFeaturesReady[] = $callback;
     }
 
     /**

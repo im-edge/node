@@ -64,6 +64,9 @@ class Features
                     }
                 }
             }
+            foreach ($features->getLoaded() as $feature) {
+                $feature->triggerFeaturesReady($features);
+            }
             // TODO: enable one per one, to allow enabling via API
             // $this->remoteApi->setFeatures($this->features);
         });
