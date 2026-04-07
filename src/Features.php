@@ -71,7 +71,7 @@ class Features
         return $features;
     }
 
-    public function tellSubscribersAboutLoadedFeature(Feature $feature): void
+    public function tellConnectionSubscribersAboutLoadedFeature(Feature $feature): void
     {
         $connected = $this->nodeRouter->directlyConnected;
         foreach ($feature->getConnectionSubscribers() as $subscriber) {
@@ -99,7 +99,7 @@ class Features
             $this->load($name, $directory);
         }
         foreach ($this->getLoaded() as $feature) {
-            $this->tellSubscribersAboutLoadedFeature($feature);
+            $this->tellConnectionSubscribersAboutLoadedFeature($feature);
         }
     }
 
