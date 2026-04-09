@@ -83,6 +83,12 @@ class WorkerApi implements EventEmitterInterface, DaemonComponent
     }
 
     #[ApiMethod]
+    public function getAvailableMethods(): array
+    {
+        return $this->apiRunner->getKnownMethods();
+    }
+
+    #[ApiMethod]
     public function shutdown(): void
     {
         $this->emit(self::ON_SHUTDOWN_REQUESTED);
