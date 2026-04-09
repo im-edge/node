@@ -68,7 +68,7 @@ LogHelper::logEventloopErrors($logger, "Uncaught sub-process ($featureName) erro
 
 try {
     $netString = new NetStringConnection(new ReadableResourceStream(STDIN), new WritableResourceStream(STDOUT));
-    $api = new ApiRunner($uuid->toString());
+    $api = new ApiRunner($uuid->toString(), null, $logger);
     $jsonRpc = new JsonRpcConnection($netString, $netString, $api, $logger);
     $logWriter = new JsonRpcConnectionWriter($jsonRpc);
     $logger = new Logger();
