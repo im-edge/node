@@ -79,7 +79,10 @@ class ApiRunner implements RequestHandler
 
         $meta = $this->methodMeta[$request->method] ?? null;
         if ($meta === null) {
-            return new Response($request->id, null, new Error(ErrorCode::METHOD_NOT_FOUND));
+            return new Response($request->id, null, new Error(
+                ErrorCode::METHOD_NOT_FOUND,
+                ErrorCode::METHOD_NOT_FOUND->getMessage() . ': ' . $request->method
+            ));
         }
 
         if ($request->params === null) {
