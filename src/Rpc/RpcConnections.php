@@ -98,14 +98,20 @@ class RpcConnections
         }
         $this->configured = $connections;
         foreach ($connections as $peerAddress => $connectionConfiguration) {
-            EventLoop::queue(function () use ($peerAddress) {
-                try {
-                    $this->connect($peerAddress); // TODO: from configuration
-                } catch (Exception $e) {
-                    $this->logger->error("Peer connection failed: " . $e->getMessage());
-                }
-            });
+            $this->scheduleConnection($peerAddress);
         }
+    }
+
+    protected function scheduleConnection(string $peerAddress): void
+    {
+        EventLoop::queue(function () use ($peerAddress) {
+            try {
+                // TODO: keep connecting?
+                $this->connect($peerAddress); // TODO: from configuration
+            } catch (Exception $e) {
+                $this->logger->error("Peer connection failed: " . $e->getMessage());
+            }
+        });
     }
 
     public function setConfiguredListeners(array $configured): void
