@@ -20,6 +20,8 @@ use Revolt\EventLoop;
 use Sop\CryptoEncoding\PEM;
 use Sop\X509\Certificate\Certificate;
 
+use function Amp\delay;
+
 /**
  * TODO, listAvailableFeatures, enable/configureFeature, -> prefixed namespace
  */
@@ -309,6 +311,16 @@ class NodeApi
         $features = $this->node->getFeatures();
         $features->enable($name, $sourcePath);
         $features->load($name, $sourcePath);
+        return true;
+    }
+
+    /**
+     * Waits $delay seconds. Main purpose: verify, whether everything still works in parallel
+     */
+    #[ApiMethod]
+    public function wait(int $delay = 10): bool
+    {
+        delay($delay);
         return true;
     }
 }
