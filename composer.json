@@ -26,7 +26,6 @@
     "ext-sockets": "*",
     "ext-zlib": "*",
     "amphp/http-client": "^5.0",
-    "amphp/mysql": "^3.0",
     "amphp/process": "^2.0",
     "amphp/redis": "^2.0",
     "amphp/sql-common": "^2.0",
