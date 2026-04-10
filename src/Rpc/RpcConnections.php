@@ -14,8 +14,8 @@ use Amp\Socket\PendingAcceptError;
 use Amp\Socket\ResourceServerSocket;
 use Amp\Socket\ServerTlsContext;
 use Amp\Socket\Socket;
+use Amp\Socket\SocketAddress;
 use Amp\Socket\SocketException;
-use Amp\Socket\TlsException;
 use DateTimeImmutable;
 use Exception;
 use IMEdge\Async\Retry;
@@ -62,8 +62,16 @@ class RpcConnections
 
     protected DeferredCancellation $stopper;
 
-    /** @var array<string, \stdClass> */
+    /**
+     * Configured connections
+     *
+     * Read from config, tweaked at runtime. An explicit disconnect () might remove a configured
+     * connection
+     *
+     * @var array<string, \stdClass>
+     */
     protected array $configured = [];
+
     /** @var array<string, DeferredFuture> Pending connections, indexed by peer address */
     protected array $pending = [];
 
@@ -73,8 +81,14 @@ class RpcConnections
     /** @var array<string, JsonRpcConnection> Established connections, indexed by peer address */
     protected array $established = [];
 
+    /** @var array  */
+    // Hmmmmmm....
+    // protected array $jsonRpcConnections = [];
+
     /** @var array<string, ConnectionInformation> Connection information, indexed by peer address */
     protected array $connections = [];
+
+    protected ?CertificationAuthority $ca = null;
 
     public function __construct(
         protected readonly NodeRunner $node,
@@ -124,23 +138,29 @@ class RpcConnections
         }
         $this->configuredListeners = $configured;
         foreach ($configured as $socket => $connectionConfiguration) {
-            EventLoop::queue(function () use ($socket) {
-                try {
-                    $bind = $this->listen($socket);
-                    try {
-                        foreach ($bind as $connection) {
-                            // TODO: Move this loop elsewhere
-                            $this->logger->notice('Got a connection on tcp://' . $socket);
-                        }
-                        // Socket stopped.
-                    } catch (\Throwable $e) {
-                        $this->logger->notice("Socket tcp://$socket failed: " . $e->getMessage());
-                    }
-                } catch (Exception $e) {
-                    $this->logger->notice("Listening failed (where it shouldn't): " . $e->getMessage());
-                }
-            });
+            $this->launchListener($socket, $connectionConfiguration);
         }
+    }
+
+    protected function launchListener(string $socket, $connectionConfiguration): void
+    {
+        EventLoop::queue(function () use ($socket) {
+            try {
+                $bind = $this->listen($socket);
+                try {
+                    foreach ($bind as $connection) {
+                        /** @var JsonRpcConnection $connection */
+                        // TODO: Move this loop elsewhere. We must loop, as it is a generator
+                        $this->logger->notice('Got a connection on tcp://' . $socket);
+                    }
+                    // Socket stopped.
+                } catch (\Throwable $e) {
+                    $this->logger->notice("Socket tcp://$socket failed: " . $e->getMessage());
+                }
+            } catch (Exception $e) {
+                $this->logger->error("Failed to listen on $socket, will not be tried again: " . $e->getMessage());
+            }
+        });
     }
 
     public function stop(): void
@@ -174,11 +194,8 @@ class RpcConnections
                 return;
             }
 
-            $this->logger->notice(sprintf(
-                'Got a new connection from %s',
-                $socket->getRemoteAddress()->toString()
-            ));
-            if ($rpc = $this->connectionEstablished($socket, ConnectionDirection::INCOMING)) {
+            $this->logger->notice(sprintf('Got a new connection from %s', $socket->getRemoteAddress()->toString()));
+            if ($rpc = $this->onConnectionEstablished($socket, ConnectionDirection::INCOMING)) {
                 yield $rpc;
             }
         }
@@ -207,34 +224,48 @@ class RpcConnections
         return false;
     }
 
+    /**
+     * @deprecated not deprecated, but broken
+     */
     public function close(JsonRpcConnection $connection): void
     {
+        // This doesn't work this way, we need the peer address
         unset($this->connections[spl_object_id($connection)]);
         $connection->close();
     }
 
-    protected function connectionEstablished(Socket $socket, ConnectionDirection $direction): ?JsonRpcConnection
+    protected function setupTls(Socket $socket, ConnectionDirection $direction): bool
     {
         $remoteAddress = $socket->getRemoteAddress();
-        $peerType = RpcPeerType::ANONYMOUS;
-        if ($direction === ConnectionDirection::INCOMING) {
-            $this->logger->debug("Got a new connection from $remoteAddress");
-        } else {
-            $this->logger->debug("A new connetion to $remoteAddress has been established");
-        }
 
         try {
             $socket->setupTls();
-        } catch (TlsException $e) {
+        } catch (SocketException $e) {
+            // Hint: mostly TlsException
             $this->logger->error(sprintf(
                 'TLS setup for %s failed: %s',
                 $remoteAddress->toString(),
                 $e->getMessage()
             ));
+            if ($direction === ConnectionDirection::OUTGOING) {
+                $key = $socket->getRemoteAddress()->toString();
+                $this->failing[$key] = EventLoop::delay(5, function () use ($key) {
+                    unset($this->failing[$key]);
+                    // $this->connect($key);
+                });
+            }
+
             $socket->close();
 
-            return null;
+            return false;
         }
+
+        return true;
+    }
+
+    protected function checkCertificatesAndGetRemoteName(Socket $socket, ConnectionDirection $direction): ?string
+    {
+        $remoteAddress = $socket->getRemoteAddress();
 
         try {
             $remoteName = null;
@@ -253,6 +284,13 @@ class RpcConnections
                     $remoteName = CertificateHelper::getSubjectName($cert);
                 }
             }
+            $this->connections[$remoteAddress->toString()] = new ConnectionInformation(
+                $remoteAddress->toString(),
+                $remoteName,
+                ConnectionState::CONNECTED
+            );
+
+            return $remoteName;
         } catch (SocketException $e) {
             // Message is:
             // Peer certificates not captured; use ClientTlsContext::withPeerCapturing() to capture peer certificates
@@ -272,9 +310,11 @@ class RpcConnections
             return null;
             // TODO: Normally we should not fall through?!
         }
+    }
 
+    protected function initializeJsonRpc(Socket $socket, ConnectionDirection $direction): ?JsonRpcConnection
+    {
         $netString = new NetStringConnection($socket, $socket);
-
         $handler = new ApiRunner($this->certName, $this->node->nodeRouter, $this->logger);
         if (true || $peerType === RpcPeerType::CONTROL) {
             $handler->addApi(new NodeApi(
@@ -298,22 +338,32 @@ class RpcConnections
             }
         }
         // What about $this->requestHandler?
-        $jsonRpc = new JsonRpcConnection($netString, $netString, $handler);
 
-        $idx = spl_object_id($jsonRpc);
+        return new JsonRpcConnection($netString, $netString, $handler, $this->logger);
+    }
+
+    protected function onConnectionEstablished(Socket $socket, ConnectionDirection $direction): ?JsonRpcConnection
+    {
+        $remoteAddress = $socket->getRemoteAddress();
+        $peerType = RpcPeerType::ANONYMOUS;
+        if ($direction === ConnectionDirection::INCOMING) {
+            $this->logger->debug("Got a new incoming connection from $remoteAddress");
+        } else {
+            $this->logger->debug("A new outgoing connection to $remoteAddress has been established");
+        }
+        if (!$this->setupTls($socket, $direction)) {
+            return null;
+        }
+        if (null === ($remoteName = $this->checkCertificatesAndGetRemoteName($socket, $direction))) {
+            return null;
+        }
+        $jsonRpc = $this->initializeJsonRpc($socket, $direction);
+
+        $rpcIdx = spl_object_id($jsonRpc); // Has formerly been used, but why??
+        $idx = $remoteAddress->toString();
         $this->established[$idx] = $jsonRpc;
-        $this->connections[$remoteAddress->toString()] = new ConnectionInformation(
-            $remoteAddress->toString(),
-            $remoteName,
-            ConnectionState::CONNECTED
-        );
-        $socket->onClose(function () use ($idx, $remoteAddress, $remoteName) {
-            unset($this->established[$idx]);
-            unset($this->connections[$remoteAddress->toString()]);
-            $this->node->nodeRouter->removePeerByName($remoteName);
-            $this->tellFeaturesAboutLostConnection($remoteName);
-            // Change information, if configured - otherwise forget ist
-            $this->logger->notice(sprintf('Connection with %s has been closed', $remoteAddress->toString()));
+        $socket->onClose(function () use ($rpcIdx, $remoteAddress, $remoteName) {
+            $this->removeClosedConnection($rpcIdx, $remoteAddress, $remoteName);
         });
         // Not yet: $routes = $jsonRpc->request('node.getActiveRoutes');
         // NodeList::fromSerialization ? Do we need NodeList?
@@ -321,6 +371,17 @@ class RpcConnections
         $this->tellFeaturesAboutConnection($jsonRpc, $remoteName, $peerType);
 
         return $jsonRpc;
+    }
+
+    protected function removeClosedConnection($rpcIdx, SocketAddress $remoteAddress, string $remoteName): void
+    {
+        $idx = $remoteAddress->toString();
+        unset($this->established[$idx]);
+        unset($this->connections[$remoteAddress->toString()]);
+        $this->node->nodeRouter->removePeerByName($remoteName);
+        $this->tellFeaturesAboutLostConnection($remoteName);
+        // Change information, if configured - otherwise forget ist
+        $this->logger->notice(sprintf('Connection with %s has been closed', $remoteAddress->toString()));
     }
 
     protected function updateRoutes(JsonRpcConnection $connection, string $peerIdentifier): void
@@ -390,28 +451,34 @@ class RpcConnections
         }
     }
 
-    /**
-     * @param string $peerAddress e.g. 192.0.2.10:5661
-     * @param string|null $fingerprint
-     * @throws CancelledException|ConnectException
-     */
-    public function connect(string $peerAddress, ?string $fingerprint = null): JsonRpcConnection
+    protected function waitForPending(string $peerAddress): ?JsonRpcConnection
     {
-        if (isset($this->established[$peerAddress])) {
-            $this->logger->notice("$peerAddress: already established");
-            return $this->established[$peerAddress];
-        }
-        if (isset($this->pending[$peerAddress])) {
-            $this->logger->notice("$peerAddress: already pending");
-            return $this->pending[$peerAddress]->getFuture()->await();
-        }
-        if (isset($this->failing[$peerAddress])) {
-            $this->logger->notice("$peerAddress: already failing, retrying immediately");
-            EventLoop::cancel($this->failing[$peerAddress]);
-            unset($this->failing[$peerAddress]);
-            return $this->connect($peerAddress);
-        }
-        if (! isset($this->connections[$peerAddress])) {
+        return $this->pending[$peerAddress]->getFuture()->await() ?? null;
+    }
+
+    protected function isPending(string $peerAddress): bool
+    {
+        return isset($this->pending[$peerAddress]);
+    }
+
+    protected function isConfigured(string $peerAddress): bool
+    {
+        return isset($this->configured[$peerAddress]);
+    }
+
+    protected function isFailing(string $peerAddress): bool
+    {
+        return isset($this->failing[$peerAddress]);
+    }
+
+    protected function getEstablishedConnection(string $peerAddress): ?JsonRpcConnection
+    {
+        return $this->established[$peerAddress] ?? null;
+    }
+
+    protected function onEstablishedConnection(string $peerAddress, ?string $fingerprint = null): ?JsonRpcConnection
+    {
+        if (! $this->isConfigured($peerAddress)) {
             $this->connections[$peerAddress] = new ConnectionInformation($peerAddress);
             $this->logger->debug('Connecting to ' . $peerAddress);
         }
@@ -422,42 +489,96 @@ class RpcConnections
             $this->stopper->getCancellation()
         );
         $socket->onClose(function () use ($peerAddress, $fingerprint) {
-            if (isset($this->configured[$peerAddress])) {
-                // TODO: Add to pending
-                $this->logger->notice("Reconnecting to $peerAddress in 5s");
-                Retry::forever(fn () => $this->connect(
-                    $peerAddress,
-                    $fingerprint
-                ), "Reconnecting to $peerAddress", 30, 5, 30, $this->logger);
+            if (isset($this->failing[$peerAddress])) {
+                $this->logger->notice('Special case: GOT IT!');
+                return;
+            }
+            if ($this->isConfigured($peerAddress)) {
+                $this->reconnect($peerAddress, $fingerprint);
             }
         });
 
-        return $this->connectionEstablished($socket, ConnectionDirection::OUTGOING)
+        return $this->onConnectionEstablished($socket, ConnectionDirection::OUTGOING)
             ?? throw new Exception('Failed to connect');
+    }
+
+    /**
+     * Hint: this method might take a LONG time to complete
+     *
+     * @param string $peerAddress e.g. 192.0.2.10:5661
+     * @throws CancelledException|ConnectException
+     */
+    public function connect(string $peerAddress, ?string $fingerprint = null): JsonRpcConnection
+    {
+        $this->logger->notice("Connection attempt: $peerAddress");
+
+        if ($connection = $this->getEstablishedConnection($peerAddress)) {
+            $this->logger->notice("$peerAddress: already established during call to connect()");
+            return $connection;
+        }
+        if ($this->isPending($peerAddress)) {
+            // TODO: remove log line
+            $this->logger->notice("$peerAddress: connection already pending in connect()");
+            return $this->waitForPending($peerAddress);
+        }
+        if ($this->isFailing($peerAddress)) {
+            $this->logger->notice("$peerAddress: already failing, retrying immediately in connect()");
+            EventLoop::cancel($this->failing[$peerAddress]);
+            unset($this->failing[$peerAddress]);
+            return $this->connect($peerAddress);
+        }
+
+        return $this->onEstablishedConnection($peerAddress, $fingerprint);
+    }
+
+    protected function reconnect(string $peerAddress, ?string $fingerprint = null): void
+    {
+        $this->logger->notice("Reconnecting to $peerAddress in 5s");
+        Retry::forever(fn () => $this->connect(
+            $peerAddress,
+            $fingerprint
+        ), "Reconnecting to $peerAddress", 30, 5, 30, $this->logger);
+    }
+
+    protected function forgetConfiguredConnection(string $peerAddress): void
+    {
+        unset($this->connections[$peerAddress]);
+    }
+
+    protected function disconnectEstablishedConnection(string $peerAddress): void
+    {
+        if ($connection = $this->getEstablishedConnection($peerAddress)) {
+            unset($this->established[$peerAddress]);
+            EventLoop::queue($connection->close(...));
+        }
+    }
+
+    protected function stopPendingConnection(string $peerAddress): void
+    {
+        if (isset($this->pendingConnections[$peerAddress])) {
+            $pending = $this->pending[$peerAddress];
+            unset($this->pending[$peerAddress]);
+            EventLoop::queue(function () use ($pending) {
+                $pending->error(new Exception('Connection attempt has been stopped'));
+            });
+        }
+    }
+
+    protected function forgetFailingConnection(string $peerAddress): void
+    {
+        if (isset($this->failing[$peerAddress])) {
+            EventLoop::cancel($this->failing[$peerAddress]);
+            unset($this->failing[$peerAddress]);
+        }
     }
 
     public function disconnect(string $peerAddress): void
     {
         $this->logger->notice('Disconnecting from ' . $peerAddress);
-        if (isset($this->connections[$peerAddress])) {
-            unset($this->connections[$peerAddress]);
-        }
-        if (isset($this->established[$peerAddress])) {
-            $connection = $this->established[$peerAddress];
-            unset($this->established[$peerAddress]);
-            EventLoop::queue($connection->close(...));
-        }
-        if (isset($this->pendingConnections[$peerAddress])) {
-            $pending = $this->pending[$peerAddress];
-            unset($this->pending[$peerAddress]);
-            EventLoop::queue(function () use ($pending) {
-                $pending->error(new Exception('Connection closed'));
-            });
-        }
-        if (isset($this->failing[$peerAddress])) {
-            EventLoop::cancel($this->failing[$peerAddress]);
-            unset($this->failing[$peerAddress]);
-        }
+        $this->forgetConfiguredConnection($peerAddress);
+        $this->disconnectEstablishedConnection($peerAddress);
+        $this->stopPendingConnection($peerAddress);
+        $this->forgetFailingConnection($peerAddress);
     }
 
     public function getConnections(): array
@@ -560,14 +681,22 @@ class RpcConnections
 
         $certificate = Certificate::fromPEM(PEM::fromFile($ssl->getCertificatePath($certName)));
         $now = new DateTimeImmutable();
-        if ($certificate->tbsCertificate()->validity()->notAfter()->dateTime() < $now) {
-            $this->logger->warning('Dropping my certificate, it has expired at ' . $now->format('Y-m-d H:i:s'));
+        $notAfter = $certificate->tbsCertificate()->validity()->notAfter()->dateTime();
+        $notBefore = $certificate->tbsCertificate()->validity()->notBefore()->dateTime();
+        if ($notAfter < $now) {
+            $this->logger->warning(
+                'Dropping my certificate, it has expired at '
+                . $notAfter->format('Y-m-d H:i:s')
+            );
             $private = KeyGenerator::generate();
             $certificate = CertificateHelper::createTemporarySelfSigned($certName, $private);
             $ssl->store($certificate, $private);
         }
-        if ($certificate->tbsCertificate()->validity()->notBefore()->dateTime() > $now) {
-            $this->logger->warning('Dropping my certificate, it is not valid before ' . $now->format('Y-m-d H:i:s'));
+        if ($notBefore > $now) {
+            $this->logger->warning(
+                'Dropping my certificate, it is not valid before '
+                . $notBefore->format('Y-m-d H:i:s')
+            );
             $private = KeyGenerator::generate();
             $certificate = CertificateHelper::createTemporarySelfSigned($certName, $private);
             $ssl->store($certificate, $private);
