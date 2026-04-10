@@ -98,9 +98,11 @@ class Features
 
     public function loadAll(NodeRunner $node): void
     {
+        $pending = [];
         foreach ($this->enumEnabled() as $name => $directory) {
-            $this->load($name, $directory);
+            $pending[] = async(fn () => $this->load($name, $directory));
         }
+        awaitAll($pending);
         foreach ($this->getLoaded() as $feature) {
             $this->tellConnectionSubscribersAboutLoadedFeature($feature);
         }
