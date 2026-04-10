@@ -17,7 +17,10 @@ use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
+use Revolt\EventLoop;
 use RuntimeException;
+
+use function Amp\async;
 
 class ApiRunner implements RequestHandler
 {
@@ -86,7 +89,8 @@ class ApiRunner implements RequestHandler
         }
 
         if ($request->params === null) {
-            return new Response($request->id, $this->methods[$request->method]());
+            // return new Response($request->id, $this->methods[$request->method]());
+            return new Response($request->id, async($this->methods[$request->method](...))->await());
         }
 
         $parameters = (array) $request->params;
@@ -100,7 +104,8 @@ class ApiRunner implements RequestHandler
             }
         }
 
-        return new Response($request->id, $this->methods[$request->method](...$parameters));
+        // return new Response($request->id, $this->methods[$request->method](...$parameters));
+        return new Response($request->id, async(fn () => $this->methods[$request->method](...$parameters))->await());
     }
 
     public function handleNotification(Notification $notification): void
@@ -132,11 +137,12 @@ class ApiRunner implements RequestHandler
             }
         }
 
-        $this->methods[$notification->method](...$parameters);
+        EventLoop::defer(fn () => $this->methods[$notification->method](...$parameters));
     }
 
     protected function handleRemoteRequest(Request $request, $target): Response
     {
+        // $this->logger?->notice('Sending remote request: ' . $request->method);
         if ($rpc = $this->nodeRouter->getConnectionFor(Uuid::fromString($target))) {
             return $rpc->sendRequest($request);
         }
