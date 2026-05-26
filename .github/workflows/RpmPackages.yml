@@ -7,10 +7,10 @@ on:
 jobs:
   build-rpm:
     name: Build RPM Package
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     steps:
       - name: Check out Source Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -28,7 +28,7 @@ jobs:
           echo "rpm_filename="$(find $HOME/rpmbuild/RPMS/ -type f -name '*.rpm' -exec basename {} \;) >> "$GITHUB_OUTPUT"
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4.0.0
+        uses: actions/upload-artifact@v7
         with:
-          name: ${{ steps.build-package.outputs.rpm_filename }}
+          archive: false
           path: ${{ steps.build-package.outputs.rpm_file }}
