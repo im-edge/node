@@ -410,9 +410,9 @@ class RpcConnections
         RpcPeerType $peerType,
     ): void {
         $this->logger->notice(sprintf(
-            ' - activating %s (%d connection subscribers)',
+            ' - telling feature %s about connection to %s',
             $feature->name,
-            count($feature->getConnectionSubscribers())
+            $peerIdentifier, // TODO: address?
         ));
         foreach ($feature->getConnectionSubscribers() as $connectionSubscriber) {
             $connectionSubscriber->activateConnection($peerIdentifier, $connection, $peerType);
@@ -437,9 +437,9 @@ class RpcConnections
         string $peerIdentifier
     ): void {
         $this->logger->notice(sprintf(
-            ' - deactivating %s (%d connection subscribers)',
+            ' - telling feature %s about lost connection to %s',
             $feature->name,
-            count($feature->getConnectionSubscribers())
+            $peerIdentifier, // TODO: address?
         ));
         foreach ($feature->getConnectionSubscribers() as $connectionSubscriber) {
             $connectionSubscriber->deactivateConnection($peerIdentifier);
