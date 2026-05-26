@@ -46,30 +46,28 @@ class Features
             $node->getConfigDir(),
             $logger
         );
-        EventLoop::queue(function () use ($features, $node) {
-            $features->loadAll($node);
+        $features->loadAll($node);
 
-            foreach ($features->getLoaded() as $feature) {
-                // Duplicate: $features->tellSubscribersAboutLoadedFeature($feature);
-                // TODO: Move this into loadAll?
-                foreach ($feature->getRegisteredRpcApis() as $rpcApi) {
-                    try {
-                        $node->controlApi->addApi($rpcApi);
-                    } catch (\Throwable $e) {
-                        $features->logger->error(sprintf(
-                            'Failed to register API for feature %s: %s',
-                            $feature->name,
-                            $e->getMessage()
-                        ));
-                    }
+        foreach ($features->getLoaded() as $feature) {
+            // Duplicate: $features->tellSubscribersAboutLoadedFeature($feature);
+            // TODO: Move this into loadAll?
+            foreach ($feature->getRegisteredRpcApis() as $rpcApi) {
+                try {
+                    $node->controlApi->addApi($rpcApi);
+                } catch (\Throwable $e) {
+                    $features->logger->error(sprintf(
+                        'Failed to register API for feature %s: %s',
+                        $feature->name,
+                        $e->getMessage()
+                    ));
                 }
             }
-            foreach ($features->getLoaded() as $feature) {
-                $feature->triggerFeaturesReady($features);
-            }
-            // TODO: enable one per one, to allow enabling via API
-            // $this->remoteApi->setFeatures($this->features);
-        });
+        }
+        foreach ($features->getLoaded() as $feature) {
+            $feature->triggerFeaturesReady($features);
+        }
+        // TODO: enable one per one, to allow enabling via API
+        // $this->remoteApi->setFeatures($this->features);
 
         return $features;
     }
