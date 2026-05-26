@@ -74,6 +74,7 @@ class NodeRunner implements DaemonComponent
         if ($this->isCa()) {
             $this->initializeCa();
         }
+        EventLoop::queue($this->launchRedis(...));
         $this->events = new Events();
         $this->services = new Services($this, $this->logger);
         $this->identifier = new NodeIdentifier($this->getUuid(), $this->name, self::getFqdn());
@@ -89,10 +90,10 @@ class NodeRunner implements DaemonComponent
         });
         $this->nodeRouter = new NodeRouter(new Node($this->identifier->uuid, $this->identifier->name), $this->logger);
         $this->workerInstances = new WorkerInstances($this->logger);
-        $this->features = Features::initialize($this, $this->logger);
-        $this->rpcConnections = new RpcConnections($this, $this->features, $this->logger);
-        EventLoop::queue($this->launchRedis(...));
         $this->initializeRemoteControl();
+        $this->features = Features::initialize($this, $this->logger);
+        $this->logger->notice('All features loaded');
+        $this->rpcConnections = new RpcConnections($this, $this->features, $this->logger);
         $this->rpcConnections->setConfiguredConnections(
             $this->requireConfig()->getArray(self::CONFIG_PERSISTED_CONNECTIONS)
         );
