@@ -425,6 +425,9 @@ class RpcConnections
         RpcPeerType $peerType
     ): void {
         foreach ($this->features->getLoaded() as $feature) {
+            if (count($feature->getConnectionSubscribers()) === 0) {
+                continue;
+            }
             $this->tellFeatureAboutConnection($feature, $connection, $peerIdentifier, $peerType);
         }
     }
@@ -447,6 +450,9 @@ class RpcConnections
         string $peerIdentifier
     ): void {
         foreach ($this->features->getLoaded() as $feature) {
+            if (count($feature->getConnectionSubscribers()) === 0) {
+                continue;
+            }
             $this->tellFeatureAboutLostConnection($feature, $peerIdentifier);
         }
     }
